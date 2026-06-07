@@ -2,4 +2,82 @@
 {% block title %}Profil{% endblock %}
 {% block content %}
 
+<div class="container py-5">
+
+    <!-- Title -->
+    <div class="text-center mb-4">
+        <h3 class="fw-bold">Pengaturan Profil</h3>
+    </div>
+
+    <!-- Center wrapper -->
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <!-- Informasi Akun -->
+            <div class="card bg-dark text-white border-0 shadow-sm mb-4"
+                style="border-radius: 20px;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-primary mb-3">Informasi Akun</h6>
+
+                    <label class="form-label">Email</label>
+                    <input type="text"
+                           class="form-control bg-secondary text-white border-0"
+                           value="{{ current_user.email }}"
+                           disabled>
+
+                    <small class="text-muted d-block mt-2">
+                        Email tidak dapat diubah.
+                    </small>
+                </div>
+            </div>
+
+            <!-- Ubah Password -->
+            <div class="card bg-dark text-white border-0 shadow-sm"
+                style="border-radius: 20px;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-primary mb-3">Ubah Password</h6>
+
+                    <form method="POST" action="{{ url_for('auth.update_password') }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Password Saat Ini</label>
+                            <input type="password"
+                                   name="current_password"
+                                   class="form-control bg-secondary text-white border-0"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Password Baru
+                                <small class="text-muted">(min. 6 karakter)</small>
+                            </label>
+                            <input type="password"
+                                   name="new_password"
+                                   class="form-control bg-secondary text-white border-0"
+                                   minlength="6"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Konfirmasi Password Baru</label>
+                            <input type="password"
+                                   name="confirm_password"
+                                   class="form-control bg-secondary text-white border-0"
+                                   required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Simpan Password
+                        </button>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
 {% endblock %}
