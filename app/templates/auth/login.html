@@ -27,7 +27,16 @@
 
                 <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
-                    <input type="password" id="password" name="password" class="form-control bg-secondary-subtle" placeholder="••••••••" required>
+
+                    <div class="input-group">
+                        <input type="password" id="password" name="password"
+                            class="form-control bg-secondary-subtle"
+                            placeholder="••••••••" required>
+
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                            <i class="fa fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 py-2">
@@ -39,4 +48,19 @@
         </div>
     </div>
 </div>
+
+<script>
+    const togglePassword = document.getElementById("togglePassword");
+    const password = document.getElementById("password");
+    const eyeIcon = document.getElementById("eyeIcon");
+
+    togglePassword.addEventListener("click", function () {
+        const isHidden = password.getAttribute("type") === "password";
+
+        password.setAttribute("type", isHidden ? "text" : "password");
+
+        eyeIcon.classList.toggle("fa-eye");
+        eyeIcon.classList.toggle("fa-eye-slash");
+    });
+</script>
 {% endblock %}
