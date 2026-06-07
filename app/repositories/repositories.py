@@ -14,7 +14,14 @@ class DatasetRepository:
         return sorted([r[0] for r in rows])
     
 class SpecificationVMRepository:
-   pass
+    @staticmethod
+    def get_by_package_id(package_id: int) -> SpecificationVM | None:
+        return SpecificationVM.query.filter_by(package_id=package_id).first()
+
+    @staticmethod
+    def get_all_as_dict() -> dict[int, SpecificationVM]:
+        specs = SpecificationVM.query.all()
+        return {spec.package_id: spec for spec in specs}
 
 class SimulationRepository:
     @staticmethod
@@ -60,5 +67,22 @@ class ForecastResultRepository:
             ForecastResult.query
             .filter_by(simulation_id=simulation_id)
             .order_by(ForecastResult.package_id, ForecastResult.date)
+            .all()
+        )
+        
+class ServerEstimationResultRepository:
+    @staticmethod
+    def bulk_insert(records: list[dict]) -> None:
+        if not records:
+            return
+        db.session.bulk_insert_mappings(ServerEstimationResult, records)
+        db.session.commit()
+
+    @staticmethod
+    def get_by_simulation_id(simulation_id: int) -> list[ServerEstimationResult]:
+        return (
+            ServerEstimationResult.query
+            .filter_by(simulation_id=simulation_id)
+            .order_by(ServerEstimationResult.date)
             .all()
         )
