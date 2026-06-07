@@ -6,19 +6,29 @@ from app.models import (
 class DatasetRepository:
     @staticmethod
     def bulk_upsert(records: list[dict]) -> None:
-        """Insert atau update jika (package_id, date) sudah ada."""
         if not records:
             return
+
         for record in records:
             existing = Dataset.query.filter_by(
                 package_id=record["package_id"],
                 date=record["date"],
             ).first()
+
             if existing:
-                existing.total_subscribe = record["total_subscribe"]
+                changed = (
+                    existing.total_subscribe != record["total_subscribe"]
+                    or existing.total_terminate != record["total_terminate"]
+                )
+
+                if changed:
+                    existing.total_subscribe = record["total_subscribe"]
+                    existing.total_terminate = record["total_terminate"]
                 existing.total_terminate = record["total_terminate"]
+
             else:
                 db.session.add(Dataset(**record))
+
         db.session.commit()
 
     @staticmethod
