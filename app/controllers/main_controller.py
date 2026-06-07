@@ -1,12 +1,18 @@
-from flask import Blueprint, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
-from app.services import ForecastService, EstimationService
+from app.services import UploadService, ForecastService, EstimationService
 from app.repositories import DatasetRepository, SimulationRepository
 
 main_bp = Blueprint("main", __name__, url_prefix="/main")
 
+@main_bp.route("/", methods=["GET"])
+# @login_required
+def index():
+    has_data = DatasetRepository.has_data()
+    return render_template("main/index.html", has_data=has_data)
+
 @main_bp.route("/run-forecast", methods=["POST"])
-@login_required
+# @login_required
 def run_forecast():
     try:
         server_utilization_percent = float(request.form.get("server_utilization_percent", 0))
