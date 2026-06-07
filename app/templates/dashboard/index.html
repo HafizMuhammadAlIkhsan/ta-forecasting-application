@@ -278,7 +278,7 @@
         <div style="font-size: 2rem; margin-bottom: .75rem;">📊</div>
         <div style="font-size: 1rem; font-weight: 600; margin-bottom: .4rem;">Belum ada simulasi</div>
         <div style="font-size: .85rem; margin-bottom: 1.25rem;">Jalankan forecast terlebih dahulu untuk melihat hasil di dashboard.</div>
-        <a href="{{ url_for('main.index') }}" class="btn btn-primary">Upload &amp; Jalankan Forecast</a>
+        {# <a href="{{ url_for('main.index') }}" class="btn btn-primary">Upload &amp; Jalankan Forecast</a> #}
     </div>
 </div>
 
@@ -290,9 +290,9 @@
         <div class="page-title" style="margin-bottom:.2rem;">Dashboard</div>
         <div class="page-subtitle">Monitoring forecast &amp; estimasi utilisasi server</div>
     </div>
-    <a href="{{ url_for('main.index') }}" class="btn btn-outline" style="font-size:.82rem;">
+    {# <a href="{{ url_for('main.index') }}" class="btn btn-outline" style="font-size:.82rem;">
         + Simulasi Baru
-    </a>
+    </a> #}
 </div>
 
 <!-- ═══ Simulation Selector ═══ -->
@@ -402,6 +402,118 @@
         <span class="badge badge-blue" style="margin-left:.35rem; font-size:.65rem; vertical-align:middle;">{{ forecast_results | length }}</span>
         {% endif %}
     </button>
+</div>
+
+<!-- ── Tab: Estimasi Utilisasi ── -->
+<div id="tab-estimation" class="tab-panel active">
+    {% if estimation_results %}
+    <div class="table-card">
+        <div class="table-card-header">
+            <span class="table-card-title">Estimasi Utilisasi Server per Bulan</span>
+            <span class="table-card-count">{{ estimation_results | length }} bulan</span>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:140px;">Bulan</th>
+                        <th>Final Utilisasi</th>
+                        <th style="width:200px;">Grafik</th>
+                        <th style="width:180px;">CPU Est. (cores)</th>
+                        <th style="width:160px;">RAM Est. (GB)</th>
+                        <th style="width:180px;">Storage Est. (GB)</th>
+                        <th style="width:110px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in estimation_results %}
+                    {% set util = row.final_utilization_percentage %}
+                    {% set base_util = selected_simulation.server_utilization_percent %}
+                    {% set resource_pct = util - base_util %}
+
+                    {#
+                        Back-calculate estimated resource usage from final_utilization:
+                        resource_pct = util - base_util (avg of cpu/ram/storage pct)
+                        We can show proportional estimates using capacity values.
+                        est_resource = (resource_pct / 100) * capacity  (approximate, per-resource)
+                    #}
+                    {% set est_cpu     = (resource_pct / 100) * selected_simulation.capacity_cpu %}
+                    {% set est_ram     = (resource_pct / 100) * selected_simulation.capacity_ram %}
+                    {% set est_storage = (resource_pct / 100) * selected_simulation.capacity_storage %}
+
+                    {% if util >= 90 %}
+                        {% set bar_class = "red" %}
+                        {% set status_color = "var(--danger)" %}
+                        {% set status_label = "Kritis" %}
+                        {% set badge_class = "badge-red" %}
+                    {% elif util >= 70 %}
+                        {% set bar_class = "yellow" %}
+                        {% set status_color = "var(--warning)" %}
+                        {% set status_label = "Tinggi" %}
+                        {% set badge_class = "badge-yellow" %}
+                    {% else %}
+                        {% set bar_class = "green" %}
+                        {% set status_color = "var(--success)" %}
+                        {% set status_label = "Normal" %}
+                        {% set badge_class = "badge-green" %}
+                    {% endif %}
+
+                    <tr>
+                        <td><strong>{{ row.date.strftime('%b %Y') }}</strong></td>
+                        <td>
+                            <span style="font-size:.95rem; font-weight:700; color:{{ status_color }};">
+                                {{ "%.2f"|format(util) }}%
+                            </span>
+                        </td>
+                        <td>
+                            <div class="util-bar-wrap">
+                                <div class="util-bar" style="flex:1;">
+                                    <div class="util-bar-fill {{ bar_class }}"
+                                         style="width:{{ [util, 100]|min }}%;"></div>
+                                </div>
+                                <span style="font-size:.72rem; color:var(--text-muted); min-width:38px; text-align:right;">
+                                    {{ "%.0f"|format([util, 100]|min) }}%
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="resource-pct">
+                                {{ "%.2f"|format(est_cpu) }}
+                            </span>
+                            <span style="font-size:.72rem; color:var(--text-muted);"> / {{ selected_simulation.capacity_cpu }}</span>
+                        </td>
+                        <td>
+                            <span class="resource-pct">
+                                {{ "%.2f"|format(est_ram) }}
+                            </span>
+                            <span style="font-size:.72rem; color:var(--text-muted);"> / {{ selected_simulation.capacity_ram }}</span>
+                        </td>
+                        <td>
+                            <span class="resource-pct">
+                                {{ "%.2f"|format(est_storage) }}
+                            </span>
+                            <span style="font-size:.72rem; color:var(--text-muted);"> / {{ selected_simulation.capacity_storage }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {{ badge_class }}">
+                                <span class="status-dot" style="background:{{ status_color }};"></span>
+                                {{ status_label }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="table-card">
+        <div class="empty-center">
+            <div style="font-size:1.8rem; margin-bottom:.5rem;">📭</div>
+            Tidak ada data estimasi utilisasi untuk simulasi ini.
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- ── Tab: Detail Forecast ── -->

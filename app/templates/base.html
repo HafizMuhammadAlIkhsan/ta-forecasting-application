@@ -3,11 +3,138 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title></title>
+    <title>{% block title %}ForecastNet{% endblock %}</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        :root {
+            --bg:           #0d0f18;
+            --surface:      #161925;
+            --surface2:     #1e2235;
+            --border:       #2a2f45;
+            --accent:       #5b8dee;
+            --accent-hover: #4a7de0;
+            --success:      #34c97a;
+            --danger:       #e05c5c;
+            --warning:      #f0a84a;
+            --info:         #5bb8ee;
+            --text:         #dde1f0;
+            --text-muted:   #7a82a0;
+            --radius:       8px;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ── Navbar ── */
+        .navbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .navbar-brand { font-size: 1rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .navbar-nav { display: flex; gap: 0.2rem; align-items: center; }
+        .nav-link {
+            color: var(--text-muted); text-decoration: none;
+            padding: 0.38rem 0.75rem; border-radius: var(--radius);
+            font-size: 0.85rem; transition: all .15s;
+        }
+        .nav-link:hover { color: var(--text); background: var(--surface2); }
+        .btn-logout {
+            color: var(--danger); background: none;
+            border: 1px solid var(--danger);
+            padding: 0.33rem 0.75rem; border-radius: var(--radius);
+            font-size: 0.85rem; cursor: pointer; text-decoration: none; transition: all .15s;
+        }
+        .btn-logout:hover { background: var(--danger); color: #fff; }
+
+        /* ── Layout ── */
+        .container { max-width: 1280px; margin: 0 auto; padding: 1.75rem 1.5rem; }
+        .page-title { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.5rem; }
+
+        /* ── Alerts ── */
+        .alert {
+            padding: 0.7rem 1rem; border-radius: var(--radius);
+            margin-bottom: 1rem; font-size: 0.85rem; border-left: 3px solid transparent;
+        }
+        .alert-success { background: rgba(52,201,122,.1); border-color: var(--success); color: var(--success); }
+        .alert-danger  { background: rgba(224,92,92,.1);  border-color: var(--danger);  color: var(--danger); }
+        .alert-warning { background: rgba(240,168,74,.1); border-color: var(--warning); color: var(--warning); }
+        .alert-info    { background: rgba(91,184,238,.1); border-color: var(--info);    color: var(--info); }
+
+        /* ── Card ── */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem; margin-bottom: 1.25rem; }
+        .card-title { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 1rem; }
+
+        /* ── Table ── */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background: var(--surface2); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: .5px; padding: .55rem .85rem; text-align: left; border-bottom: 1px solid var(--border); }
+        td { padding: .5rem .85rem; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,.02); }
+
+        /* ── Buttons ── */
+        .btn { display: inline-block; padding: .5rem 1.1rem; border-radius: var(--radius); font-size: .875rem; font-weight: 500; border: none; cursor: pointer; text-decoration: none; transition: all .15s; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-full { width: 100%; text-align: center; }
+
+        /* ── Forms ── */
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: .82rem; color: var(--text-muted); margin-bottom: .3rem; }
+        input[type=text], input[type=email], input[type=password],
+        input[type=number], input[type=file], select {
+            width: 100%; background: var(--surface2); border: 1px solid var(--border);
+            color: var(--text); padding: .5rem .75rem; border-radius: var(--radius);
+            font-size: .875rem; outline: none; transition: border-color .15s;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        /* ── Grid ── */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+        @media(max-width: 720px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+        /* ── Misc ── */
+        .text-muted  { color: var(--text-muted); font-size: .85rem; }
+        .mt-1 { margin-top: .5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .badge { display: inline-block; padding: .18rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+        .badge-blue   { background: rgba(91,141,238,.15); color: var(--accent); }
+        .badge-green  { background: rgba(52,201,122,.15); color: var(--success); }
+        .badge-red    { background: rgba(224,92,92,.15);  color: var(--danger); }
+        .badge-yellow { background: rgba(240,168,74,.15); color: var(--warning); }
+        .empty-state  { text-align: center; padding: 2.5rem; color: var(--text-muted); }
     </style>
 </head>
 <body>
+{% if current_user and current_user.is_authenticated %}
+<nav class="navbar">
+    <a href="{{ url_for('dashboard.index') }}" class="navbar-brand">📈 ForecastNet</a>
+    <div class="navbar-nav">
+        <a href="{{ url_for('main.index') }}"      class="nav-link">Upload &amp; Forecast</a>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-link">Dashboard</a>
+        <a href="{{ url_for('auth.profile') }}"    class="nav-link">Profil</a>
+        <a href="{{ url_for('auth.logout') }}"     class="btn-logout">Logout</a>
+    </div>
+</nav>
+{% endif %}
 
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
 </body>
 </html>
