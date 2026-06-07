@@ -1,7 +1,228 @@
 {% extends "base.html" %}
-<!-- {% block title %}Upload &amp; Forecast{% endblock %} -->
+{% block title %}Upload & Forecast{% endblock %}
+
 {% block content %}
-<div>
-<p>Hello</p>
+
+<div class="container py-5">
+
+    <!-- TITLE -->
+    <div class="text-center mb-5">
+        <h3 class="fw-bold">Upload Data & Jalankan Forecast</h3>
+        <p class="text-muted">
+            Kelola dataset dan parameter forecasting server utilization
+        </p>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="col-lg-6">
+
+            <!-- UPLOAD CARD -->
+            <div class="card bg-dark shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-body p-4">
+
+                    <h6 class="fw-bold text-primary mb-3">
+                        Upload Dataset CSV
+                    </h6>
+
+                    <p class="text-light small">
+                        File CSV harus memiliki kolom:
+                        <code>package_id</code>,
+                        <code>date</code>,
+                        <code>total_subscribe</code>,
+                        <code>total_terminate</code>.
+                    </p>
+
+                    <form method="POST"
+                          action="{{ url_for('main.upload') }}"
+                          enctype="multipart/form-data">
+
+                        <div class="mb-3">
+                            <input type="file"
+                                   class="form-control"
+                                   name="file"
+                                   accept=".csv"
+                                   required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Unggah
+                        </button>
+
+                    </form>
+
+                    {% if has_data %}
+                        <div class="alert alert-success mt-3 py-2 small mb-0">
+                            ✓ Dataset sudah tersedia. Upload ulang untuk update.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning mt-3 py-2 small mb-0">
+                            ⚠ Belum ada dataset. Upload terlebih dahulu.
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <!-- TABLE CARD -->
+            <div class="card bg-dark shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+
+                    <h6 class="fw-bold text-primary mb-3">
+                        Contoh Format CSV
+                    </h6>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>package_id</th>
+                                    <th>date</th>
+                                    <th>subscribe</th>
+                                    <th>terminate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>2024-01-15</td>
+                                    <td>120</td>
+                                    <td>5</td>
+                                </tr>
+                                <tr>
+                                    <td>1</td>
+                                    <td>2024-02-20</td>
+                                    <td>95</td>
+                                    <td>3</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>2024-01-10</td>
+                                    <td>200</td>
+                                    <td>10</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="col-lg-6">
+
+            <div class="card bg-dark shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+
+                    <h6 class="fw-bold text-primary mb-3">
+                        Parameter Forecasting
+                    </h6>
+
+                    <form method="POST" id="forecast-form">
+
+                        <!-- UTILIZATION -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Utilisasi Server Saat Ini (%)
+                            </label>
+                            <input type="number"
+                                   class="form-control"
+                                   name="server_utilization_percent"
+                                   min="0" max="100"
+                                   step="0.01"
+                                   value="30"
+                                   required>
+                        </div>
+
+                        <!-- HORIZON -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Horizon Forecasting
+                            </label>
+
+                            <select class="form-select"
+                                    name="horizon_months">
+                                {% for i in range(4, 13) %}
+                                    <option value="{{ i }}"
+                                        {% if i == 6 %}selected{% endif %}>
+                                        {{ i }} bulan
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- CAPACITY -->
+                        <label class="form-label mb-2">
+                            Kapasitas Server
+                        </label>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col">
+                                <input type="number"
+                                       class="form-control"
+                                       name="capacity_cpu"
+                                       placeholder="CPU"
+                                       value="64"
+                                       required>
+                            </div>
+
+                            <div class="col">
+                                <input type="number"
+                                       class="form-control"
+                                       name="capacity_ram"
+                                       placeholder="RAM"
+                                       value="256"
+                                       required>
+                            </div>
+
+                            <div class="col">
+                                <input type="number"
+                                       class="form-control"
+                                       name="capacity_storage"
+                                       placeholder="Storage"
+                                       value="2000"
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- BUTTON -->
+                        <button type="submit"
+                                class="btn btn-primary w-100"
+                                id="btn-run"
+                                {% if not has_data %}disabled{% endif %}>
+                            ▶ Mulai Forecasting
+                        </button>
+
+                        {% if not has_data %}
+                            <small class="text-muted d-block mt-2">
+                                Upload dataset terlebih dahulu untuk mengaktifkan fitur ini.
+                            </small>
+                        {% else %}
+                            <small class="text-muted d-block mt-2">
+                                Proses forecasting dapat memakan beberapa menit.
+                            </small>
+                        {% endif %}
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
 </div>
+
+<!-- LOADING SCRIPT -->
+<script>
+document.getElementById("forecast-form").addEventListener("submit", function () {
+    const btn = document.getElementById("btn-run");
+    btn.innerHTML = "⏳ Memproses...";
+    btn.disabled = true;
+});
+</script>
+
 {% endblock %}
