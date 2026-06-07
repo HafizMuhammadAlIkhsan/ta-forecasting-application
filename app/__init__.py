@@ -20,11 +20,11 @@ def create_app():
 
     from app.controllers.auth_controller import auth_bp
     from app.controllers.main_controller import main_bp
-    from app.controllers.dashboard_controller import dashboard_bp
+    # from app.controllers.dashboard_controller import dashboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
-    app.register_blueprint(dashboard_bp)
+    # app.register_blueprint(dashboard_bp)
     
     app.cli.add_command(init_db)
     app.cli.add_command(seed)
