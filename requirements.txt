@@ -8,3 +8,4 @@ Werkzeug==3.0.3
 SQLAlchemy==2.0.30
 prophet==1.3.0
 cmdstanpy==1.3.0
+Flask-Mail==0.10.0
