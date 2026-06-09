@@ -1,207 +1,184 @@
 {% extends "base.html" %}
-{% block title %}Upload & Forecast{% endblock %}
+{% block title %}Input Data{% endblock %}
 
 {% block content %}
+<div style="padding: 2rem 2.5rem;">
 
-<div class="container py-5">
-
-    <!-- TITLE -->
-    <div class="text-center mb-5">
-        <h3 class="fw-bold">Upload Data & Jalankan Forecast</h3>
-        <p class="text-muted">
-            Kelola dataset dan parameter forecasting server utilization
-        </p>
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1">Input Data</h4>
+        <p class="text-muted mb-0 small">Unggah dataset dan atur parameter forecasting Virtual Machine</p>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 align-items-start">
 
-        <!-- ================= LEFT PANEL ================= -->
+        <!-- ===== LEFT: Upload Dataset ===== -->
         <div class="col-lg-6">
-
-            <!-- UPLOAD CARD -->
-            <div class="card bg-dark shadow-sm border-0 rounded-4 mb-4">
+            <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
 
-                    <h6 class="fw-bold text-primary mb-3">
-                        Upload Dataset CSV
-                    </h6>
-
-                    <p class="text-light small">
-                        File CSV harus memiliki kolom:
-                        <code>package_id</code>,
-                        <code>date</code>,
-                        <code>total_subscribe</code>,
-                        <code>total_terminate</code>.
-                    </p>
+                    <h6 class="fw-bold mb-1">Upload Dataset</h6>
+                    <p class="text-muted small mb-4">Unggah file CSV data historis penggunaan VM</p>
 
                     <form method="POST"
-                          action="{{ url_for('main.upload') }}"
-                          enctype="multipart/form-data">
+                        action="{{ url_for('main.upload') }}"
+                        enctype="multipart/form-data"
+                        id="upload-form">
 
-                        <div class="mb-3">
-                            <input type="file"
-                                   class="form-control"
-                                   name="file"
-                                   accept=".csv"
-                                   required>
+                        <!-- Drag & Drop zone -->
+                        <div id="drop-zone"
+                            class="rounded-3 p-5 text-center mb-3"
+                            style="border: 2px dashed #cbd3e3; background-color: #fafbff; cursor: pointer;">
+                            <input type="file" name="file" id="file-input" accept=".csv" class="d-none">
+                            <div id="drop-content">
+                                <i class="fa-solid fa-upload fs-2 text-primary mb-3 d-block"></i>
+                                <p class="fw-semibold mb-1">Seret &amp; lepas file di sini</p>
+                                <p class="text-muted small mb-1">atau klik untuk memilih file</p>
+                                <p class="text-muted" style="font-size: .75rem;">Format yang didukung: <em>.csv</em></p>
+                            </div>
+                            <div id="file-chosen" class="d-none">
+                                <i class="fa-solid fa-file-csv fs-2 text-success mb-2 d-block"></i>
+                                <p class="fw-semibold mb-0" id="file-name-label"></p>
+                                <p class="text-muted small mt-1">Klik untuk ganti file</p>
+                            </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100">
-                            Unggah
-                        </button>
+                        <div class="d-flex gap-2 mb-4">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fa-solid fa-upload me-2"></i>Unggah Dataset
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary px-4" id="btn-batal">
+                                Batal
+                            </button>
+                        </div>
 
                     </form>
 
                     {% if has_data %}
-                        <div class="alert alert-success mt-3 py-2 small mb-0">
-                            ✓ Dataset sudah tersedia. Upload ulang untuk update.
+                        <div class="alert alert-success py-2 small mb-4">
+                            <i class="fa-solid fa-circle-check me-1"></i>
+                            Dataset sudah tersedia. Upload ulang untuk memperbarui.
                         </div>
                     {% else %}
-                        <div class="alert alert-warning mt-3 py-2 small mb-0">
-                            ⚠ Belum ada dataset. Upload terlebih dahulu.
+                        <div class="alert alert-warning py-2 small mb-4">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            Belum ada dataset. Upload terlebih dahulu.
                         </div>
                     {% endif %}
 
-                </div>
-            </div>
-
-            <!-- TABLE CARD -->
-            <div class="card bg-dark shadow-sm border-0 rounded-4">
-                <div class="card-body p-4">
-
-                    <h6 class="fw-bold text-primary mb-3">
-                        Contoh Format CSV
-                    </h6>
-
+                    <!-- Contoh Format CSV -->
+                    <p class="fw-semibold small text-muted mb-2">Contoh format CSV:</p>
                     <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover align-middle">
-                            <thead>
+                        <table class="table table-sm table-bordered align-middle small mb-0">
+                            <thead class="table-light">
                                 <tr>
                                     <th>package_id</th>
                                     <th>date</th>
-                                    <th>subscribe</th>
-                                    <th>terminate</th>
+                                    <th>total_subscribe</th>
+                                    <th>total_terminate</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td>2024-01-15</td>
-                                    <td>120</td>
-                                    <td>5</td>
-                                </tr>
-                                <tr>
-                                    <td>1</td>
-                                    <td>2024-02-20</td>
-                                    <td>95</td>
-                                    <td>3</td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>2024-01-10</td>
-                                    <td>200</td>
-                                    <td>10</td>
-                                </tr>
+                                <tr><td>48</td><td>2024-01-15</td><td>120</td><td>5</td></tr>
+                                <tr><td>48</td><td>2024-02-20</td><td>95</td><td>3</td></tr>
+                                <tr><td>49</td><td>2024-01-10</td><td>200</td><td>10</td></tr>
                             </tbody>
                         </table>
                     </div>
 
                 </div>
             </div>
-
         </div>
 
-        <!-- ================= RIGHT PANEL ================= -->
+        <!-- ===== RIGHT: Parameter Forecasting ===== -->
         <div class="col-lg-6">
-
-            <div class="card bg-dark shadow-sm border-0 rounded-4">
+            <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
 
-                    <h6 class="fw-bold text-primary mb-3">
-                        Parameter Forecasting
-                    </h6>
+                    <h6 class="fw-bold mb-1">Parameter Forecasting</h6>
+                    <p class="text-muted small mb-4">Konfigurasi parameter analisis kapasitas server</p>
 
-                    <form method="POST" action="{{ url_for('main.run_forecast') }}" id="forecast-form">
+                    <form method="POST"
+                        action="{{ url_for('main.run_forecast') }}"
+                        id="forecast-form">
 
-                        <!-- UTILIZATION -->
+                        <!-- Utilisasi -->
                         <div class="mb-3">
-                            <label class="form-label">
-                                Utilisasi Server Saat Ini (%)
-                            </label>
-                            <input type="number"
-                                   class="form-control"
-                                   name="server_utilization_percent"
-                                   min="0" max="100"
-                                   step="0.01"
-                                   value="30"
-                                   required>
+                            <label class="form-label fw-semibold small">Utilisasi Server Saat Ini (%)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">%</span>
+                                <input type="number"
+                                    class="form-control"
+                                    name="server_utilization_percent"
+                                    min="0" max="100" step="0.01"
+                                    value="72"
+                                    required>
+                            </div>
                         </div>
 
-                        <!-- HORIZON -->
+                        <!-- Total Kapasitas Server -->
                         <div class="mb-3">
-                            <label class="form-label">
-                                Horizon Forecasting
-                            </label>
+                            <label class="form-label fw-semibold small">Total Kapasitas Server</label>
+                            <div class="row g-2">
+                                <div class="col">
+                                    <label class="form-label small text-muted mb-1">CPU (Core)</label>
+                                    <input type="number"
+                                        class="form-control"
+                                        name="capacity_cpu"
+                                        placeholder="CPU"
+                                        value="128"
+                                        min="0" step="0.01"
+                                        required>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label small text-muted mb-1">RAM (GB)</label>
+                                    <input type="number"
+                                        class="form-control"
+                                        name="capacity_ram"
+                                        placeholder="RAM"
+                                        value="512"
+                                        min="0" step="0.01"
+                                        required>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label small text-muted mb-1">Storage (TB)</label>
+                                    <input type="number"
+                                        class="form-control"
+                                        name="capacity_storage"
+                                        placeholder="Storage"
+                                        value="24"
+                                        min="0" step="0.01"
+                                        required>
+                                </div>
+                            </div>
+                        </div>
 
-                            <select class="form-select"
-                                    name="horizon_months">
+                        <!-- Rentang Forecasting -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small">Rentang Forecasting</label>
+                            <select class="form-select" name="horizon_months">
                                 {% for i in range(4, 13) %}
-                                    <option value="{{ i }}"
-                                        {% if i == 6 %}selected{% endif %}>
-                                        {{ i }} bulan
+                                    <option value="{{ i }}" {% if i == 6 %}selected{% endif %}>
+                                        {{ i }} Bulan
                                     </option>
                                 {% endfor %}
                             </select>
                         </div>
 
-                        <!-- CAPACITY -->
-                        <label class="form-label mb-2">
-                            Kapasitas Server
-                        </label>
-
-                        <div class="row g-2 mb-3">
-                            <div class="col">
-                                <input type="number"
-                                       class="form-control"
-                                       name="capacity_cpu"
-                                       placeholder="CPU"
-                                       value="64"
-                                       required>
-                            </div>
-
-                            <div class="col">
-                                <input type="number"
-                                       class="form-control"
-                                       name="capacity_ram"
-                                       placeholder="RAM"
-                                       value="256"
-                                       required>
-                            </div>
-
-                            <div class="col">
-                                <input type="number"
-                                       class="form-control"
-                                       name="capacity_storage"
-                                       placeholder="Storage"
-                                       value="2000"
-                                       required>
-                            </div>
-                        </div>
-
-                        <!-- BUTTON -->
+                        <!-- Submit -->
                         <button type="submit"
                                 class="btn btn-primary w-100"
                                 id="btn-run"
                                 {% if not has_data %}disabled{% endif %}>
-                            ▶ Mulai Forecasting
+                            <i class="fa-solid fa-play me-2"></i>Mulai Forecasting
                         </button>
 
                         {% if not has_data %}
-                            <small class="text-muted d-block mt-2">
-                                Upload dataset terlebih dahulu untuk mengaktifkan fitur ini.
+                            <small class="text-muted d-block mt-2 text-center">
+                                Upload dataset terlebih dahulu untuk mengaktifkan tombol ini.
                             </small>
                         {% else %}
-                            <small class="text-muted d-block mt-2">
+                            <small class="text-muted d-block mt-2 text-center">
                                 Proses forecasting dapat memakan beberapa menit.
                             </small>
                         {% endif %}
@@ -210,19 +187,69 @@
 
                 </div>
             </div>
-
         </div>
 
     </div>
 </div>
 
-<!-- LOADING SCRIPT -->
 <script>
-document.getElementById("forecast-form").addEventListener("submit", function () {
-    const btn = document.getElementById("btn-run");
-    btn.innerHTML = "⏳ Memproses...";
-    btn.disabled = true;
-});
-</script>
+(function () {
+    const dropZone   = document.getElementById('drop-zone');
+    const fileInput  = document.getElementById('file-input');
+    const dropContent = document.getElementById('drop-content');
+    const fileChosen = document.getElementById('file-chosen');
+    const fileLabel  = document.getElementById('file-name-label');
+    const btnBatal   = document.getElementById('btn-batal');
 
+    function showFile(file) {
+        fileLabel.textContent = file.name;
+        dropContent.classList.add('d-none');
+        fileChosen.classList.remove('d-none');
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        dropContent.classList.remove('d-none');
+        fileChosen.classList.add('d-none');
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#3b5bdb';
+        dropZone.style.backgroundColor = '#eef2ff';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#cbd3e3';
+        dropZone.style.backgroundColor = '#fafbff';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#cbd3e3';
+        dropZone.style.backgroundColor = '#fafbff';
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            showFile(file);
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files[0]) showFile(fileInput.files[0]);
+    });
+
+    btnBatal.addEventListener('click', clearFile);
+
+    document.getElementById('forecast-form').addEventListener('submit', function () {
+        const btn = document.getElementById('btn-run');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';
+        btn.disabled = true;
+    });
+}());
+</script>
 {% endblock %}
