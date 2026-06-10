@@ -18,8 +18,20 @@ def load_user(user_id: str) -> User | None:
 
 
 @auth_bp.route("/", methods=["GET"])
+def root():
+    if current_user.is_authenticated:
+        if not DatasetRepository.has_data():
+            return redirect(url_for("main.index"))
+        return redirect(url_for("dashboard.index"))
+    return redirect(url_for("auth.login"))   
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    if current_user.is_authenticated:
+        if not DatasetRepository.has_data():
+            return redirect(url_for("main.index"))
+        return redirect(url_for("dashboard.index"))
+
     if request.method == "POST":
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
@@ -31,7 +43,7 @@ def login():
                 return redirect(url_for("main.index"))
             return redirect(url_for("dashboard.index"))
 
-        flash("Login Error: Email atau password salah.", "danger")
+        flash("Login Error, Email atau password salah.", "error")
 
     return render_template("auth/login.html")
 
@@ -47,39 +59,45 @@ def logout():
 def forgot_password():
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip()
-        user = AuthService.get_user_by_email(email)
-        otp = str(random.randint(100000, 999999))
-        
-        session["reset_email"] = email
-        session["reset_otp"] = otp
-        
-        if not user:
-            flash("Email tidak ditemukan.", "danger")
-            return redirect(url_for("auth.forgot_password"))
+        try:
+            email = request.form.get("email", "").strip()
+            user = AuthService.get_user_by_email(email)
+            otp = str(random.randint(100000, 999999))
+            
+            session["reset_email"] = email
+            session["reset_otp"] = otp
 
-        new_password = secrets.token_urlsafe(8)
+            if not user:
+                flash("Email tidak ditemukan.", "danger")
+                return redirect(url_for("auth.forgot_password"))
 
-        user.password = generate_password_hash(new_password)
-        db.session.commit()
+            new_password = secrets.token_urlsafe(8)
 
-        msg = Message(
-            subject="Kode Reset Password",
-            recipients=[email]
-        )
+            user.password = generate_password_hash(new_password)
+            db.session.commit()
 
-        msg.body = f"""
-        Kode verifikasi reset password Anda:
+            msg = Message(
+                subject="Kode Reset Password",
+                recipients=[email]
+            )
 
-        {otp}
+            msg.body = f"""
+            Kode verifikasi reset password Anda:
 
-        Kode berlaku selama 10 menit.
-        """
+            {otp}
 
-        mail.send(msg)
+            Kode berlaku selama 10 menit.
+            """
 
-        flash("Kode Verifikasi telah dikirim ke email Anda.", "success")
-        return redirect(url_for("auth.verify_otp"))
+            mail.send(msg)
+
+            flash("Kode Verifikasi telah dikirim ke email Anda.", "success")
+            return redirect(url_for("auth.verify_otp"))
+        except TimeoutError:
+            flash("Server email tidak merespons. Silakan coba lagi.", "error")
+
+        except Exception:
+            flash("Terjadi kesalahan saat mengirim OTP.", "error")
 
     return render_template("auth/forgot-password.html")
 
@@ -91,7 +109,7 @@ def verify_otp():
         otp = request.form.get("otp")
 
         if otp != session.get("reset_otp"):
-            flash("Kode OTP salah.", "danger")
+            flash("Kode OTP salah.", "error")
             return redirect(url_for("auth.verify_otp"))
 
         return redirect(url_for("auth.reset_password"))
@@ -107,7 +125,7 @@ def reset_password():
         confirm_password = request.form.get("confirm_password")
 
         if password != confirm_password:
-            flash("Konfirmasi password tidak cocok.", "danger")
+            flash("Konfirmasi password tidak cocok.", "error")
             return redirect(url_for("auth.reset_password"))
 
         email = session.get("reset_email")
@@ -141,9 +159,9 @@ def update_password():
     confirm_pw = request.form.get("confirm_password", "")
 
     if new_pw != confirm_pw:
-        flash("Konfirmasi password tidak cocok.", "danger")
+        flash("Konfirmasi password tidak cocok.", "error")
         return redirect(url_for("auth.profile"))
 
     success, message = AuthService.update_password(current_user, current_pw, new_pw)
-    flash(message, "success" if success else "danger")
+    flash(message, "success" if success else "error")
     return redirect(url_for("auth.profile"))
