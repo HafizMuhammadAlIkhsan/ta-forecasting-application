@@ -4,7 +4,6 @@
 {% block content %}
 <div style="padding: 2rem 2.5rem;">
 
-    <!-- Page Header -->
     <div class="mb-4">
         <h4 class="fw-bold mb-1">Input Data</h4>
         <p class="text-muted mb-0 small">Unggah dataset dan atur parameter forecasting Virtual Machine</p>
@@ -12,7 +11,6 @@
 
     <div class="row g-4 align-items-start">
 
-        <!-- ===== LEFT: Upload Dataset ===== -->
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
@@ -66,7 +64,6 @@
                         </div>
                     {% endif %}
 
-                    <!-- Contoh Format CSV -->
                     <p class="fw-semibold small text-muted mb-2">Contoh format CSV:</p>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle small mb-0">
@@ -85,12 +82,10 @@
                             </tbody>
                         </table>
                     </div>
-
                 </div>
             </div>
         </div>
 
-        <!-- ===== RIGHT: Parameter Forecasting ===== -->
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
@@ -102,7 +97,6 @@
                         action="{{ url_for('main.run_forecast') }}"
                         id="forecast-form">
 
-                        <!-- Utilisasi -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">Utilisasi Server Saat Ini (%)</label>
                             <div class="input-group">
@@ -116,7 +110,6 @@
                             </div>
                         </div>
 
-                        <!-- Total Kapasitas Server -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">Total Kapasitas Server</label>
                             <div class="row g-2">
@@ -126,7 +119,7 @@
                                         class="form-control"
                                         name="capacity_cpu"
                                         placeholder="CPU"
-                                        value="128"
+                                        value="0"
                                         min="0" step="0.01"
                                         required>
                                 </div>
@@ -136,24 +129,23 @@
                                         class="form-control"
                                         name="capacity_ram"
                                         placeholder="RAM"
-                                        value="512"
+                                        value="0"
                                         min="0" step="0.01"
                                         required>
                                 </div>
                                 <div class="col">
-                                    <label class="form-label small text-muted mb-1">Storage (TB)</label>
+                                    <label class="form-label small text-muted mb-1">Storage (GB)</label>
                                     <input type="number"
                                         class="form-control"
                                         name="capacity_storage"
                                         placeholder="Storage"
-                                        value="24"
+                                        value="0"
                                         min="0" step="0.01"
                                         required>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Rentang Forecasting -->
                         <div class="mb-4">
                             <label class="form-label fw-semibold small">Rentang Forecasting</label>
                             <select class="form-select" name="horizon_months">
@@ -165,7 +157,6 @@
                             </select>
                         </div>
 
-                        <!-- Submit -->
                         <button type="submit"
                                 class="btn btn-primary w-100"
                                 id="btn-run"
@@ -182,13 +173,10 @@
                                 Proses forecasting dapat memakan beberapa menit.
                             </small>
                         {% endif %}
-
                     </form>
-
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 

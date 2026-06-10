@@ -1,628 +1,320 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — ForecastNet{% endblock %}
+{% block title %}Dashboard Forecasting{% endblock %}
+
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+{% endblock %}
+
 {% block content %}
-
-<style>
-    /* ── Dashboard-specific overrides ── */
-    .dash-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 1.75rem;
-    }
-    .dash-header-left .page-title { margin-bottom: .2rem; }
-    .dash-header-left .page-subtitle {
-        font-size: .82rem;
-        color: var(--text-muted);
-    }
-
-    /* ── Simulation Selector ── */
-    .sim-selector-wrap {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1.2rem 1.4rem;
-        margin-bottom: 1.5rem;
-    }
-    .sim-selector-label {
-        font-size: .72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .9px;
-        color: var(--text-muted);
-        margin-bottom: .65rem;
-    }
-    .sim-selector-row {
-        display: flex;
-        align-items: center;
-        gap: .75rem;
-        flex-wrap: wrap;
-    }
-    .sim-selector-row select {
-        flex: 1;
-        min-width: 0;
-        max-width: 520px;
-        font-size: .88rem;
-        padding: .45rem .75rem;
-    }
-    .sim-meta-badges {
-        display: flex;
-        gap: .5rem;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .sim-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: .3rem;
-        padding: .22rem .6rem;
-        border-radius: 20px;
-        font-size: .75rem;
-        font-weight: 600;
-        border: 1px solid;
-    }
-    .sim-pill-blue   { background: rgba(91,141,238,.1); border-color: rgba(91,141,238,.3); color: var(--accent); }
-    .sim-pill-green  { background: rgba(52,201,122,.1); border-color: rgba(52,201,122,.3); color: var(--success); }
-    .sim-pill-yellow { background: rgba(240,168,74,.1); border-color: rgba(240,168,74,.3); color: var(--warning); }
-    .sim-pill-muted  { background: rgba(122,130,160,.1); border-color: rgba(122,130,160,.25); color: var(--text-muted); }
-
-    /* ── Stat Row ── */
-    .stat-row {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: .9rem;
-        margin-bottom: 1.25rem;
-    }
-    @media(max-width: 900px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
-    @media(max-width: 500px) { .stat-row { grid-template-columns: 1fr; } }
-    .stat-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1rem 1.2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 3px;
-        border-radius: 3px 0 0 3px;
-    }
-    .stat-card.blue::before   { background: var(--accent); }
-    .stat-card.green::before  { background: var(--success); }
-    .stat-card.yellow::before { background: var(--warning); }
-    .stat-card.red::before    { background: var(--danger); }
-    .stat-label {
-        font-size: .72rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: .6px;
-        color: var(--text-muted);
-        margin-bottom: .4rem;
-    }
-    .stat-value {
-        font-size: 1.45rem;
-        font-weight: 700;
-        color: var(--text);
-        line-height: 1;
-        margin-bottom: .25rem;
-    }
-    .stat-sub {
-        font-size: .75rem;
-        color: var(--text-muted);
-    }
-
-    /* ── Section Tabs ── */
-    .section-tabs {
-        display: flex;
-        gap: .35rem;
-        margin-bottom: 1rem;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 0;
-    }
-    .section-tab {
-        padding: .45rem .9rem;
-        font-size: .82rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        cursor: pointer;
-        border-radius: 6px 6px 0 0;
-        border: 1px solid transparent;
-        border-bottom: none;
-        margin-bottom: -1px;
-        background: none;
-        transition: all .15s;
-        position: relative;
-    }
-    .section-tab:hover { color: var(--text); }
-    .section-tab.active {
-        color: var(--accent);
-        background: var(--surface);
-        border-color: var(--border);
-        border-bottom-color: var(--surface);
-    }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    /* ── Tables (scrollable) ── */
-    .table-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
-    }
-    .table-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: .9rem 1.2rem;
-        border-bottom: 1px solid var(--border);
-        flex-wrap: wrap;
-        gap: .5rem;
-    }
-    .table-card-title {
-        font-size: .78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .8px;
-        color: var(--text-muted);
-    }
-    .table-card-count {
-        font-size: .78rem;
-        color: var(--text-muted);
-    }
-    .table-scroll {
-        overflow-x: auto;
-        overflow-y: auto;
-        max-height: 420px;
-    }
-    .table-scroll table { min-width: 600px; }
-
-    /* search/filter bar */
-    .table-search {
-        padding: .65rem 1.2rem;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        gap: .5rem;
-        align-items: center;
-    }
-    .table-search input {
-        width: 220px;
-        padding: .35rem .65rem;
-        font-size: .82rem;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        color: var(--text);
-        outline: none;
-    }
-    .table-search input:focus { border-color: var(--accent); }
-
-    /* util badges */
-    .util-bar-wrap {
-        display: flex;
-        align-items: center;
-        gap: .6rem;
-        min-width: 120px;
-    }
-    .util-bar {
-        flex: 1;
-        height: 5px;
-        background: var(--surface2);
-        border-radius: 3px;
-        overflow: hidden;
-    }
-    .util-bar-fill {
-        height: 100%;
-        border-radius: 3px;
-        transition: width .3s;
-    }
-    .util-bar-fill.green  { background: var(--success); }
-    .util-bar-fill.yellow { background: var(--warning); }
-    .util-bar-fill.red    { background: var(--danger); }
-
-    /* estimation status */
-    .status-dot {
-        display: inline-block;
-        width: 7px; height: 7px;
-        border-radius: 50%;
-        margin-right: .35rem;
-        vertical-align: middle;
-    }
-
-    /* resource estimation table */
-    .resource-pct {
-        display: inline-block;
-        min-width: 48px;
-        text-align: right;
-    }
-
-    /* empty state */
-    .empty-center {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: var(--text-muted);
-    }
-    .empty-center svg { margin-bottom: .75rem; opacity: .3; }
-
-    /* param grid */
-    .param-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: .75rem;
-    }
-    .param-item { }
-    .param-item-label {
-        font-size: .72rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: .6px;
-        color: var(--text-muted);
-        margin-bottom: .2rem;
-    }
-    .param-item-value {
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--text);
-    }
-</style>
+<div style="padding: 2rem 2.5rem;">
 
 {% if not simulations %}
-<!-- ═══ Empty state ═══ -->
-<div class="card">
-    <div class="empty-state" style="padding: 3.5rem;">
-        <div style="font-size: 2rem; margin-bottom: .75rem;">📊</div>
-        <div style="font-size: 1rem; font-weight: 600; margin-bottom: .4rem;">Belum ada simulasi</div>
-        <div style="font-size: .85rem; margin-bottom: 1.25rem;">Jalankan forecast terlebih dahulu untuk melihat hasil di dashboard.</div>
-        {# <a href="{{ url_for('main.index') }}" class="btn btn-primary">Upload &amp; Jalankan Forecast</a> #}
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body text-center py-5">
+        <div class="fs-1 mb-3">📊</div>
+        <h6 class="fw-bold mb-2">Belum ada simulasi</h6>
+        <p class="text-muted small mb-3">Jalankan forecast terlebih dahulu untuk melihat hasil di dashboard.</p>
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-upload me-2"></i>Upload &amp; Jalankan Forecast
+        </a>
     </div>
 </div>
 
 {% else %}
 
-<!-- ═══ Header ═══ -->
-<div class="dash-header">
-    <div class="dash-header-left">
-        <div class="page-title" style="margin-bottom:.2rem;">Dashboard</div>
-        <div class="page-subtitle">Monitoring forecast &amp; estimasi utilisasi server</div>
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Dashboard Forecasting</h4>
+        <p class="text-muted small mb-0">Hasil analisis dan prediksi kapasitas Virtual Machine</p>
     </div>
-    {# <a href="{{ url_for('main.index') }}" class="btn btn-outline" style="font-size:.82rem;">
-        + Simulasi Baru
-    </a> #}
-</div>
-
-<!-- ═══ Simulation Selector ═══ -->
-<div class="sim-selector-wrap">
-    <div class="sim-selector-label">Riwayat Simulasi</div>
-    <div class="sim-selector-row">
-        <form method="GET" action="{{ url_for('dashboard.index') }}" style="display:contents;">
-            <select name="simulation_id" onchange="this.form.submit()">
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-muted small fw-semibold">Waktu Forecasting:</span>
+        <form method="GET" action="{{ url_for('dashboard.index') }}" id="sim-form">
+            <select name="simulation_id"
+                    class="form-select form-select-sm"
+                    onchange="document.getElementById('sim-form').submit()"
+                    style="min-width: 200px;">
                 {% for sim in simulations %}
                 <option value="{{ sim.simulation_id }}"
                     {% if selected_simulation and sim.simulation_id == selected_simulation.simulation_id %}selected{% endif %}>
-                    #{{ sim.simulation_id }}
-                    &nbsp;·&nbsp;
                     {{ sim.created_at.strftime('%d %b %Y, %H:%M') }}
-                    &nbsp;·&nbsp;
-                    Horizon {{ sim.horizon_months }} bulan
-                    &nbsp;·&nbsp;
-                    Util. awal {{ "%.0f"|format(sim.server_utilization_percent) }}%
                 </option>
                 {% endfor %}
             </select>
         </form>
-
-        {% if selected_simulation %}
-        <div class="sim-meta-badges">
-            <span class="sim-pill sim-pill-blue">📅 {{ selected_simulation.created_at.strftime('%d %b %Y') }}</span>
-            <span class="sim-pill sim-pill-green">{{ selected_simulation.horizon_months }} bulan</span>
-            <span class="sim-pill sim-pill-yellow">{{ "%.1f"|format(selected_simulation.server_utilization_percent) }}% util awal</span>
-            <span class="sim-pill sim-pill-muted">ID #{{ selected_simulation.simulation_id }}</span>
-        </div>
-        {% endif %}
     </div>
 </div>
 
 {% if selected_simulation %}
 
-<!-- ═══ Parameter Cards ═══ -->
-{% set critical_count = estimation_results | selectattr('final_utilization_percentage', 'ge', 90) | list | length %}
-{% set high_count     = estimation_results | selectattr('final_utilization_percentage', 'ge', 70) | list | length %}
-{% set normal_count   = estimation_results | selectattr('final_utilization_percentage', 'lt', 70) | list | length %}
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+                <h6 class="fw-bold mb-1">Persentase Penggunaan Kapasitas Server</h6>
+                <p class="text-muted small mb-0">
+                    Prediksi penggunaan kapasitas {{ selected_simulation.horizon_months }} bulan ke depan
+                </p>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge rounded-pill px-3 py-1"
+                    style="background:rgba(240,168,40,.15); color:#b45309; border:1px solid rgba(240,168,40,.4); font-size:.75rem;">
+                    — Threshold 80%
+                </span>
+                <span class="badge rounded-pill px-3 py-1"
+                    style="background:rgba(59,91,219,.1); color:#3b5bdb; border:1px solid rgba(59,91,219,.3); font-size:.75rem;">
+                    ● Forecast
+                </span>
+            </div>
+        </div>
 
-<div class="stat-row">
-    <div class="stat-card blue">
-        <div class="stat-label">Total Forecast</div>
-        <div class="stat-value">{{ forecast_results | length }}</div>
-        <div class="stat-sub">titik data</div>
-    </div>
-    <div class="stat-card green">
-        <div class="stat-label">Periode Estimasi</div>
-        <div class="stat-value">{{ estimation_results | length }}</div>
-        <div class="stat-sub">bulan</div>
-    </div>
-    <div class="stat-card yellow">
-        <div class="stat-label">Status Tinggi</div>
-        <div class="stat-value">{{ high_count - critical_count }}</div>
-        <div class="stat-sub">bulan utilisasi ≥ 70%</div>
-    </div>
-    <div class="stat-card red">
-        <div class="stat-label">Status Kritis</div>
-        <div class="stat-value">{{ critical_count }}</div>
-        <div class="stat-sub">bulan utilisasi ≥ 90%</div>
-    </div>
-</div>
-
-<!-- ═══ Parameter Detail ═══ -->
-<div class="card" style="margin-bottom:1.25rem;">
-    <div class="card-title">Parameter Simulasi #{{ selected_simulation.simulation_id }}</div>
-    <div class="param-grid">
-        <div class="param-item">
-            <div class="param-item-label">Tanggal Dibuat</div>
-            <div class="param-item-value" style="font-size:.9rem;">{{ selected_simulation.created_at.strftime('%d %b %Y %H:%M') }}</div>
-        </div>
-        <div class="param-item">
-            <div class="param-item-label">Horizon</div>
-            <div class="param-item-value">{{ selected_simulation.horizon_months }} <span style="font-size:.75rem; font-weight:400; color:var(--text-muted);">bulan</span></div>
-        </div>
-        <div class="param-item">
-            <div class="param-item-label">Util. Awal</div>
-            <div class="param-item-value">{{ "%.1f"|format(selected_simulation.server_utilization_percent) }}<span style="font-size:.75rem; font-weight:400; color:var(--text-muted);">%</span></div>
-        </div>
-        <div class="param-item">
-            <div class="param-item-label">CPU</div>
-            <div class="param-item-value">{{ selected_simulation.capacity_cpu }} <span style="font-size:.75rem; font-weight:400; color:var(--text-muted);">cores</span></div>
-        </div>
-        <div class="param-item">
-            <div class="param-item-label">RAM</div>
-            <div class="param-item-value">{{ selected_simulation.capacity_ram }} <span style="font-size:.75rem; font-weight:400; color:var(--text-muted);">GB</span></div>
-        </div>
-        <div class="param-item">
-            <div class="param-item-label">Storage</div>
-            <div class="param-item-value">{{ selected_simulation.capacity_storage }} <span style="font-size:.75rem; font-weight:400; color:var(--text-muted);">GB</span></div>
-        </div>
-    </div>
-</div>
-
-<!-- ═══ Tabs ═══ -->
-<div class="section-tabs">
-    <button class="section-tab active" onclick="switchTab('tab-estimation', this)">
-        Estimasi Utilisasi
-        {% if estimation_results %}
-        <span class="badge badge-blue" style="margin-left:.35rem; font-size:.65rem; vertical-align:middle;">{{ estimation_results | length }}</span>
+        {% if estimation_data %}
+            <div id="utilizationChart" style="width:100%; height:320px;"></div>
+        {% else %}
+            <div class="text-center text-muted py-4 small">
+                <i class="fa-solid fa-chart-bar me-2"></i>
+                Belum ada data estimasi untuk simulasi ini.
+            </div>
         {% endif %}
-    </button>
-    <button class="section-tab" onclick="switchTab('tab-forecast', this)">
-        Detail Forecast
-        {% if forecast_results %}
-        <span class="badge badge-blue" style="margin-left:.35rem; font-size:.65rem; vertical-align:middle;">{{ forecast_results | length }}</span>
-        {% endif %}
-    </button>
+    </div>
 </div>
 
-<!-- ── Tab: Estimasi Utilisasi ── -->
-<div id="tab-estimation" class="tab-panel active">
-    {% if estimation_results %}
-    <div class="table-card">
-        <div class="table-card-header">
-            <span class="table-card-title">Estimasi Utilisasi Server per Bulan</span>
-            <span class="table-card-count">{{ estimation_results | length }} bulan</span>
-        </div>
-        <div class="table-scroll">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width:140px;">Bulan</th>
-                        <th>Final Utilisasi</th>
-                        <th style="width:200px;">Grafik</th>
-                        <th style="width:180px;">CPU Est. (cores)</th>
-                        <th style="width:160px;">RAM Est. (GB)</th>
-                        <th style="width:180px;">Storage Est. (GB)</th>
-                        <th style="width:110px;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in estimation_results %}
-                    {% set util = row.final_utilization_percentage %}
-                    {% set base_util = selected_simulation.server_utilization_percent %}
-                    {% set resource_pct = util - base_util %}
-
-                    {#
-                        Back-calculate estimated resource usage from final_utilization:
-                        resource_pct = util - base_util (avg of cpu/ram/storage pct)
-                        We can show proportional estimates using capacity values.
-                        est_resource = (resource_pct / 100) * capacity  (approximate, per-resource)
-                    #}
-                    {% set est_cpu     = (resource_pct / 100) * selected_simulation.capacity_cpu %}
-                    {% set est_ram     = (resource_pct / 100) * selected_simulation.capacity_ram %}
-                    {% set est_storage = (resource_pct / 100) * selected_simulation.capacity_storage %}
-
-                    {% if util >= 90 %}
-                        {% set bar_class = "red" %}
-                        {% set status_color = "var(--danger)" %}
-                        {% set status_label = "Kritis" %}
-                        {% set badge_class = "badge-red" %}
-                    {% elif util >= 70 %}
-                        {% set bar_class = "yellow" %}
-                        {% set status_color = "var(--warning)" %}
-                        {% set status_label = "Tinggi" %}
-                        {% set badge_class = "badge-yellow" %}
-                    {% else %}
-                        {% set bar_class = "green" %}
-                        {% set status_color = "var(--success)" %}
-                        {% set status_label = "Normal" %}
-                        {% set badge_class = "badge-green" %}
-                    {% endif %}
-
-                    <tr>
-                        <td><strong>{{ row.date.strftime('%b %Y') }}</strong></td>
-                        <td>
-                            <span style="font-size:.95rem; font-weight:700; color:{{ status_color }};">
-                                {{ "%.2f"|format(util) }}%
-                            </span>
-                        </td>
-                        <td>
-                            <div class="util-bar-wrap">
-                                <div class="util-bar" style="flex:1;">
-                                    <div class="util-bar-fill {{ bar_class }}"
-                                         style="width:{{ [util, 100]|min }}%;"></div>
-                                </div>
-                                <span style="font-size:.72rem; color:var(--text-muted); min-width:38px; text-align:right;">
-                                    {{ "%.0f"|format([util, 100]|min) }}%
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="resource-pct">
-                                {{ "%.2f"|format(est_cpu) }}
-                            </span>
-                            <span style="font-size:.72rem; color:var(--text-muted);"> / {{ selected_simulation.capacity_cpu }}</span>
-                        </td>
-                        <td>
-                            <span class="resource-pct">
-                                {{ "%.2f"|format(est_ram) }}
-                            </span>
-                            <span style="font-size:.72rem; color:var(--text-muted);"> / {{ selected_simulation.capacity_ram }}</span>
-                        </td>
-                        <td>
-                            <span class="resource-pct">
-                                {{ "%.2f"|format(est_storage) }}
-                            </span>
-                            <span style="font-size:.72rem; color:var(--text-muted);"> / {{ selected_simulation.capacity_storage }}</span>
-                        </td>
-                        <td>
-                            <span class="badge {{ badge_class }}">
-                                <span class="status-dot" style="background:{{ status_color }};"></span>
-                                {{ status_label }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% else %}
-    <div class="table-card">
-        <div class="empty-center">
-            <div style="font-size:1.8rem; margin-bottom:.5rem;">📭</div>
-            Tidak ada data estimasi utilisasi untuk simulasi ini.
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <div></div>
+    {% if package_ids %}
+    <div class="d-flex align-items-center gap-2">
+        <span class="text-muted small fw-semibold">Layanan:</span>
+        <select id="package-select"
+                class="form-select form-select-sm"
+                style="width: auto;"
+                onchange="updateLineCharts(this.value)">
+            {% for pid in package_ids %}
+            <option value="{{ pid }}">Package {{ pid }}</option>
+            {% endfor %}
+        </select>
     </div>
     {% endif %}
 </div>
-
-<!-- ── Tab: Detail Forecast ── -->
-<div id="tab-forecast" class="tab-panel">
-    {% if forecast_results %}
-    <div class="table-card">
-        <div class="table-card-header">
-            <span class="table-card-title">Hasil Forecasting per Package</span>
-            <span class="table-card-count">{{ forecast_results | length }} titik data</span>
-        </div>
-        <div class="table-search">
-            <input type="text"
-                   id="forecast-search"
-                   placeholder="Filter package ID atau bulan..."
-                   oninput="filterForecastTable(this.value)" />
-            <span id="forecast-count" style="font-size:.78rem; color:var(--text-muted);"></span>
-        </div>
-        <div class="table-scroll">
-            <table id="forecast-table">
-                <thead>
-                    <tr>
-                        <th style="width:110px;">Package ID</th>
-                        <th style="width:130px;">Bulan</th>
-                        <th>Forecast Subscribe</th>
-                        <th>Forecast Terminate</th>
-                        <th>Net Demand</th>
-                        <th style="width:120px;">Tren</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in forecast_results %}
-                    {% set net = row.forecast_subscribe - row.forecast_terminate %}
-                    <tr data-search="{{ row.package_id }} {{ row.date.strftime('%b %Y') | lower }}">
-                        <td>
-                            <span class="badge badge-blue">PKG-{{ row.package_id }}</span>
-                        </td>
-                        <td>{{ row.date.strftime('%b %Y') }}</td>
-                        <td>
-                            <span style="color:var(--success); font-weight:600;">
-                                {{ "%.2f"|format(row.forecast_subscribe) }}
-                            </span>
-                        </td>
-                        <td>
-                            <span style="color:var(--danger); font-weight:600;">
-                                {{ "%.2f"|format(row.forecast_terminate) }}
-                            </span>
-                        </td>
-                        <td>
-                            <span style="font-weight:700;
-                                {% if net >= 0 %}color:var(--success){% else %}color:var(--danger){% endif %};">
-                                {% if net >= 0 %}+{% endif %}{{ "%.2f"|format(net) }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if net >= 0 %}
-                                <span style="font-size:.8rem; color:var(--success);">▲ Naik</span>
-                            {% else %}
-                                <span style="font-size:.8rem; color:var(--danger);">▼ Turun</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-1">Forecast Subscription VM</h6>
+                    <p class="text-muted small mb-0">Prediksi jumlah VM baru yang disubscription</p>
+                </div>
+                <div id="subscribeChart" style="width:100%; height:280px;"></div>
+            </div>
         </div>
     </div>
-    {% else %}
-    <div class="table-card">
-        <div class="empty-center">
-            <div style="font-size:1.8rem; margin-bottom:.5rem;">📭</div>
-            Tidak ada data forecast untuk simulasi ini.
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <h6 class="fw-bold mb-1">Forecast Terminate VM</h6>
+                    <p class="text-muted small mb-0">Prediksi jumlah VM yang diterminasi</p>
+                </div>
+                <div id="terminateChart" style="width:100%; height:280px;"></div>
+            </div>
         </div>
     </div>
-    {% endif %}
 </div>
 
 {% else %}
-<div class="card">
-    <div class="empty-state">Pilih simulasi dari dropdown di atas untuk melihat hasil.</div>
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body text-center py-4 text-muted small">
+        Pilih simulasi dari dropdown di atas untuk melihat hasil.
+    </div>
 </div>
 {% endif %}
 
 {% endif %}
+</div>
 
 <script>
-    /* ── Tab switching ── */
-    function switchTab(panelId, btn) {
-        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-        document.querySelectorAll('.section-tab').forEach(function(b) { b.classList.remove('active'); });
-        document.getElementById(panelId).classList.add('active');
-        btn.classList.add('active');
+(function () {
+    var estimationData = {{ estimation_data | tojson }};
+    var forecastData   = {{ forecast_data   | tojson }};
+    var historyData    = {{ history_data     | tojson }};
+    var packageIds     = {{ package_ids      | tojson }};
+
+    var MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agus','Sep','Okt','Nov','Des'];
+
+    function fmtDate(isoStr) {
+        var parts = isoStr.split('-');
+        return MONTHS[parseInt(parts[1]) - 1] + ' ' + parts[0];
     }
 
-    /* ── Forecast table filter ── */
-    function filterForecastTable(query) {
-        var rows = document.querySelectorAll('#forecast-table tbody tr');
-        var q = query.toLowerCase().trim();
-        var visible = 0;
-        rows.forEach(function(row) {
-            var text = (row.dataset.search || '').toLowerCase();
-            var show = q === '' || text.indexOf(q) !== -1;
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
+    function fmtMonth(isoStr) {
+        var parts = isoStr.split('-');
+        return MONTHS[parseInt(parts[1]) - 1];
+    }
+
+    var estDiv = document.getElementById('utilizationChart');
+    if (estDiv && estimationData.length) {
+        var estLabels = estimationData.map(function(r){ return fmtMonth(r.date); });
+        var estValues = estimationData.map(function(r){ return r.utilization; });
+        var rawMax    = Math.max.apply(null, estValues);
+        var yMax      = Math.max(rawMax * 1.2, 10);
+
+        // Kumpulkan tahun unik untuk label pada sumbu X
+        var years = Array.from(new Set(
+            estimationData.map(function(r){ return r.date.split('-')[0]; })
+        )).sort();
+        var yearLabel = years.join(' / ');
+
+        var barTrace = {
+            x: estLabels,
+            y: estValues,
+            type: 'bar',
+            name: 'Utilisasi (%)',
+            marker: { color: '#3b5bdb', opacity: 0.85 },
+            hovertemplate: '<b>%{x} ' + yearLabel + '</b><br>Utilisasi: <b>%{y:.1f}%</b><extra></extra>',
+        };
+
+        var barLayout = {
+            paper_bgcolor: 'white',
+            plot_bgcolor:  'white',
+            bargap: 0.35,
+            margin: { t: 10, r: 20, b: 70, l: 70 },
+            xaxis: {
+                tickangle: 0,
+                showgrid: false,
+                title: { text: yearLabel, font: { size: 11, color: '#6b7280' } },
+            },
+            yaxis: {
+                ticksuffix: '%',
+                range: [0, yMax],
+                gridcolor: 'rgba(0,0,0,.07)',
+            },
+            shapes: [{
+                type: 'line',
+                xref: 'paper',
+                yref: 'y',
+                x0: 0, x1: 1,
+                y0: 80, y1: 80,
+                line: { color: '#f0a828', dash: 'dash', width: 2 },
+            }],
+            legend: {
+                orientation: 'h',
+                x: 0, y: -0.3,
+            },
+            hovermode: 'closest',
+            hoverlabel: {
+                bgcolor: '#111827',
+                bordercolor: 'rgba(255,255,255,0.12)',
+                font: { color: 'white', size: 12 },
+                align: 'left',
+            },
+        };
+
+        Plotly.newPlot(estDiv, [barTrace], barLayout, {
+            responsive: true,
+            displayModeBar: false,
         });
-        var countEl = document.getElementById('forecast-count');
-        if (countEl) {
-            countEl.textContent = q ? (visible + ' hasil ditemukan') : '';
-        }
     }
-</script>
 
+    function getPackageData(pkgId) {
+        var pid  = parseInt(pkgId);
+        var hist = historyData.filter(function(r){ return r.package_id === pid; });
+        var fcst = forecastData.filter(function(r){ return r.package_id === pid; });
+
+        hist.sort(function(a, b){ return a.date.localeCompare(b.date); });
+
+        // Forecast untuk hanya bulan setelah data historis terakhir
+        var maxHistDate = hist.length ? hist[hist.length - 1].date : null;
+        if (maxHistDate) {
+            fcst = fcst.filter(function(r){ return r.date > maxHistDate; });
+        }
+        fcst.sort(function(a, b){ return a.date.localeCompare(b.date); });
+
+        return {
+            histDates: hist.map(function(r){ return fmtDate(r.date); }),
+            histSub:   hist.map(function(r){ return r.total_subscribe; }),
+            histTrm:   hist.map(function(r){ return r.total_terminate; }),
+            fcstDates: fcst.map(function(r){ return fmtDate(r.date); }),
+            fcstSub:   fcst.map(function(r){ return r.forecast_subscribe; }),
+            fcstTrm:   fcst.map(function(r){ return r.forecast_terminate; }),
+        };
+    }
+
+    function lineLayout(yTitle) {
+        return {
+            paper_bgcolor: 'white',
+            plot_bgcolor:  'white',
+            margin: { t: 10, r: 20, b: 80, l: 65 },
+            xaxis: {
+                title: { text: 'Periode Waktu (Bulan)', font: { size: 11 } },
+                tickangle: -30,
+                showgrid: false,
+            },
+            yaxis: {
+                title: { text: yTitle, font: { size: 11 } },
+                gridcolor: 'rgba(0,0,0,.07)',
+            },
+            legend: {
+                orientation: 'h',
+                x: 0, y: -0.35,
+            },
+            hovermode: 'closest',
+            hoverlabel: {
+                bgcolor: '#111827',
+                bordercolor: 'rgba(255,255,255,0.12)',
+                font: { color: 'white', size: 12 },
+                align: 'left',
+            },
+        };
+    }
+
+    function buildPlotlyLine(divId, histDates, histVals, fcstDates, fcstVals, yTitle, color) {
+        var div = document.getElementById(divId);
+        if (!div) return;
+
+        var fcstX = histDates.length ? [histDates[histDates.length - 1]].concat(fcstDates) : fcstDates;
+        var fcstY = histVals.length  ? [histVals[histVals.length - 1]].concat(fcstVals)    : fcstVals;
+
+        var histTrace = {
+            x: histDates,
+            y: histVals,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Historis',
+            line:   { color: color, width: 2, dash: 'solid', opacity: 0.35 },
+            marker: { color: color, size: 5, opacity: 0.4 },
+            hovertemplate: '<b>%{x}</b><br>Historis: <b>%{y:.0f}</b><extra></extra>',
+            opacity: 0.4,
+        };
+        var fcstTrace = {
+            x: fcstX,
+            y: fcstY,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Forecast',
+            line:   { color: color, width: 2.5 },
+            marker: { color: color, size: 6 },
+            hovertemplate: '<b>%{x}</b><br>Forecast: <b>%{y:.1f}</b><extra></extra>',
+        };
+        Plotly.react(div, [histTrace, fcstTrace], lineLayout(yTitle), {
+            responsive: true,
+            displayModeBar: false,
+        });
+    }
+
+    window.updateLineCharts = function(pkgId) {
+        if (!pkgId && packageIds.length) pkgId = packageIds[0];
+        if (!pkgId) return;
+        var d = getPackageData(pkgId);
+        buildPlotlyLine('subscribeChart',
+            d.histDates, d.histSub, d.fcstDates, d.fcstSub,
+            'Jumlah Subscription VM', '#3b5bdb');
+        buildPlotlyLine('terminateChart',
+            d.histDates, d.histTrm, d.fcstDates, d.fcstTrm,
+            'Jumlah Terminasi VM', '#ef4444');
+    };
+
+    if (packageIds.length) {
+        updateLineCharts(packageIds[0]);
+    }
+}());
+</script>
 {% endblock %}
