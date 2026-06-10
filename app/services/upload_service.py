@@ -43,7 +43,9 @@ class UploadService:
             return False, "Kolom 'package_id' harus berupa angka integer."
 
         for col in ("total_subscribe", "total_terminate"):
-            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+            if df[col].replace(r"^\s*$", pd.NA, regex=True).isna().any():
+                return False, f"Kolom {col} tidak boleh kosong."
+            df[col] = pd.to_numeric(df[col], errors="raise").astype(int)
 
         records = df[list(REQUIRED_COLUMNS)].to_dict(orient="records")
 

@@ -5,6 +5,10 @@ from app import db
 
 class AuthService:
     @staticmethod
+    def get_user_by_email(email):
+        return User.query.filter_by(email=email).first()
+        
+    @staticmethod
     def authenticate(email: str, password: str) -> User | None:
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):

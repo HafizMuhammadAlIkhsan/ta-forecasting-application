@@ -10,12 +10,30 @@
     </div>
 
     <div class="row justify-content-center">
-        <div class="col-lg-5 col-md-7">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
+        <div class="col-md-6">
 
-                    <h6 class="fw-bold mb-1">Update Password</h6>
-                    <p class="text-muted small mb-4">Pastikan menggunakan password yang kuat</p>
+            <!-- Informasi Akun -->
+            <div class="card bg-dark text-white border-0 shadow-sm mb-4"
+                style="border-radius: 20px;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-primary mb-3">Informasi Akun</h6>
+
+                    <label class="form-label">Email</label>
+                    <input type="text"
+                           class="form-control bg-secondary text-white border-0"
+                           value="{{ current_user.email }}"
+                           disabled>
+
+                    <small class="text-muted d-block mt-2">
+                        Email tidak dapat diubah.
+                    </small>
+                </div>
+            </div>
+
+            <div class="card bg-dark text-white border-0 shadow-sm"
+                style="border-radius: 20px;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-primary mb-3">Ubah Password</h6>
 
                     <form method="POST" action="{{ url_for('auth.update_password') }}">
 
