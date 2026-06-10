@@ -1,138 +1,91 @@
 {% extends "base.html" %}
 {% block title %}Profil{% endblock %}
+
 {% block content %}
+<div style="padding: 2rem 2.5rem;">
 
-<div class="container py-5">
-
-    <!-- Title -->
-    <div class="text-center mb-4">
-        <h3 class="fw-bold">Pengaturan Profil</h3>
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1">Profil Pengguna</h4>
+        <p class="text-muted small mb-0">Kelola Keamanan Akun</p>
     </div>
 
-    <!-- Center wrapper -->
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-lg-5 col-md-7">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
 
-            <!-- Informasi Akun -->
-            <div class="card bg-dark text-white border-0 shadow-sm mb-4"
-                style="border-radius: 20px;">
-                <div class="card-body">
-                    <h6 class="text-uppercase text-primary mb-3">Informasi Akun</h6>
-
-                    <label class="form-label">Email</label>
-                    <input type="text"
-                           class="form-control bg-secondary text-white border-0"
-                           value="{{ current_user.email }}"
-                           disabled>
-
-                    <small class="text-muted d-block mt-2">
-                        Email tidak dapat diubah.
-                    </small>
-                </div>
-            </div>
-
-            <!-- <div class="mb-4">
-                    <label for="password" class="form-label">Password</label>
-
-                    <div class="input-group">
-                        <input type="password2" id="password2" name="password"
-                            class="form-control bg-secondary-subtle"
-                            placeholder="••••••••" required>
-
-                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                            <i class="fa fa-eye" id="eyeIcon2"></i>
-                        </button>
-                    </div>
-                </div> -->
-
-            <!-- Ubah Password -->
-            <div class="card bg-dark text-white border-0 shadow-sm"
-                style="border-radius: 20px;">
-                <div class="card-body">
-                    <h6 class="text-uppercase text-primary mb-3">Ubah Password</h6>
+                    <h6 class="fw-bold mb-1">Update Password</h6>
+                    <p class="text-muted small mb-4">Pastikan menggunakan password yang kuat</p>
 
                     <form method="POST" action="{{ url_for('auth.update_password') }}">
 
                         <div class="mb-3">
-                            <label class="form-label">Password Saat Ini</label>
-
+                            <label class="form-label fw-semibold small">Password Saat Ini</label>
                             <div class="input-group">
                                 <input type="password"
                                     name="current_password"
-                                    class="form-control bg-secondary text-white border-0"
                                     id="current_password"
+                                    class="form-control"
+                                    placeholder="Masukkan password saat ini"
                                     required>
-
-                                <button class="btn btn-outline-secondary toggle-password" type="button"
-                                        data-target="current_password">
-                                    <i class="fa fa-eye"></i>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="current_password">
+                                    <i class="fa-regular fa-eye"></i>
                                 </button>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">
-                                Password Baru <small class="text-muted">(min. 6 karakter)</small>
-                            </label>
-
+                            <label class="form-label fw-semibold small">Password Baru</label>
                             <div class="input-group">
                                 <input type="password"
                                     name="new_password"
-                                    class="form-control bg-secondary text-white border-0"
                                     id="new_password"
+                                    class="form-control"
+                                    placeholder="Masukkan password baru"
                                     minlength="6"
                                     required>
-
-                                <button class="btn btn-outline-secondary toggle-password" type="button"
-                                        data-target="new_password">
-                                    <i class="fa fa-eye"></i>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="new_password">
+                                    <i class="fa-regular fa-eye"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Konfirmasi Password Baru</label>
-
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small">Konfirmasi Password Baru</label>
                             <div class="input-group">
                                 <input type="password"
                                     name="confirm_password"
-                                    class="form-control bg-secondary text-white border-0"
                                     id="confirm_password"
+                                    class="form-control"
+                                    placeholder="Konfirmasi password baru"
                                     required>
-
-                                <button class="btn btn-outline-secondary toggle-password" type="button"
-                                        data-target="confirm_password">
-                                    <i class="fa fa-eye"></i>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="confirm_password">
+                                    <i class="fa-regular fa-eye"></i>
                                 </button>
                             </div>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100">
-                            Simpan Password
+                            <i class="fa-solid fa-lock me-2"></i>Simpan Password
                         </button>
-
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
-
 </div>
+
 <script>
-    document.querySelectorAll(".toggle-password").forEach(button => {
-        button.addEventListener("click", function () {
-            const targetId = this.getAttribute("data-target");
-            const input = document.getElementById(targetId);
-            const icon = this.querySelector("i");
-
-            const isHidden = input.type === "password";
-
-            input.type = isHidden ? "text" : "password";
-
-            icon.classList.toggle("fa-eye");
-            icon.classList.toggle("fa-eye-slash");
-        });
+document.querySelectorAll(".toggle-password").forEach(function (button) {
+    button.addEventListener("click", function () {
+        var targetId = this.getAttribute("data-target");
+        var input = document.getElementById(targetId);
+        var icon = this.querySelector("i");
+        var isHidden = input.type === "password";
+        input.type = isHidden ? "text" : "password";
+        icon.classList.toggle("fa-eye");
+        icon.classList.toggle("fa-eye-slash");
     });
+});
 </script>
 {% endblock %}

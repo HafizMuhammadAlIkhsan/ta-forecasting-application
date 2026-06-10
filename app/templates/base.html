@@ -10,7 +10,6 @@
         * { box-sizing: border-box; }
         body { margin: 0; background-color: #f0f2f8; }
 
-        /* Sidebar link */
         .sidebar-link {
             color: #c8d0e0 !important;
             text-decoration: none;
@@ -30,7 +29,6 @@
 </head>
 <body class="d-flex flex-column" style="min-height: 100vh;">
 
-    <!-- ===== TOP BAR ===== -->
     <header class="d-flex align-items-center justify-content-between px-4 flex-shrink-0"
             style="background-color: #1e2a3b; height: 56px; position: sticky; top: 0; z-index: 100;">
         <div class="d-flex align-items-center gap-2">
@@ -42,10 +40,8 @@
         </div>
     </header>
 
-    <!-- ===== SIDEBAR + CONTENT ===== -->
     <div class="d-flex flex-grow-1">
 
-        <!-- LEFT SIDEBAR -->
         <aside class="d-flex flex-column py-3 flex-shrink-0"
             style="background-color: #1e2a3b; width: 220px; min-height: calc(100vh - 56px);">
 
@@ -71,7 +67,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#"
+                        <a href="{{ url_for('auth.profile') }}"
                         class="sidebar-link nav-link d-flex align-items-center gap-2 rounded-2 px-3 py-2
                                 {{ 'active' if request.endpoint == 'auth.profile' else '' }}">
                             <i class="fa-regular fa-user fa-fw"></i> Profil
@@ -90,7 +86,6 @@
 
         </aside>
 
-        <!-- MAIN CONTENT -->
         <main class="flex-grow-1 overflow-auto">
             {% block content %}{% endblock %}
         </main>
