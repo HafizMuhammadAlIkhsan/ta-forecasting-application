@@ -29,19 +29,23 @@
 </head>
 <body class="d-flex flex-column" style="min-height: 100vh;">
 
+    {% if not hide_chrome %}
     <header class="d-flex align-items-center justify-content-between px-4 flex-shrink-0"
             style="background-color: #1e2a3b; height: 56px; position: sticky; top: 0; z-index: 100;">
         <div class="d-flex align-items-center gap-2">
             <i class="fa-solid fa-display text-white" style="font-size: 1.2rem;"></i>
         </div>
-        <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold"
-            style="width: 36px; height: 36px; font-size: .8rem; cursor: pointer;">
-            #
-        </div>
+        <a href="{{ url_for('auth.profile') }}"
+            class="d-flex align-items-center justify-content-center rounded-circle text-white text-decoration-none"
+            style="width: 36px; height: 36px; font-size: 1.5rem; cursor: pointer;">
+            <i class="fa-solid fa-circle-user"></i>
+        </a>
     </header>
+    {% endif %}
 
     <div class="d-flex flex-grow-1">
 
+        {% if not hide_chrome %}
         <aside class="d-flex flex-column py-3 flex-shrink-0"
             style="background-color: #1e2a3b; width: 220px; min-height: calc(100vh - 56px);">
 
@@ -85,6 +89,7 @@
             </div>
 
         </aside>
+        {% endif %}
 
         <main class="flex-grow-1 overflow-auto">
             {% block content %}{% endblock %}
