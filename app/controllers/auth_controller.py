@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app.services import AuthService
 from app.repositories import DatasetRepository
@@ -6,7 +6,7 @@ from app import db, mail, login_manager
 from app.models import User
 from werkzeug.security import generate_password_hash
 from flask_mail import Mail, Message
-from flask import session
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 import secrets, random
 
 auth_bp = Blueprint("auth", __name__)
@@ -57,90 +57,70 @@ def logout():
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
-
     if request.method == "POST":
-        try:
-            email = request.form.get("email", "").strip()
-            user = AuthService.get_user_by_email(email)
-            otp = str(random.randint(100000, 999999))
-            
-            session["reset_email"] = email
-            session["reset_otp"] = otp
+        email = request.form.get("email", "").strip()
+        user = AuthService.get_user_by_email(email)
 
-            if not user:
-                flash("Email tidak ditemukan.", "danger")
-                return redirect(url_for("auth.forgot_password"))
+        if not user:
+            flash("Email tidak ditemukan.", "danger")
+            return redirect(url_for("auth.forgot_password"))
 
-            new_password = secrets.token_urlsafe(8)
+        serializer = current_app.serializer
+        token = serializer.dumps(email, salt="reset-password")
 
-            user.password = generate_password_hash(new_password)
-            db.session.commit()
+        reset_link = url_for("auth.reset_password_token", token=token, _external=True)
 
-            msg = Message(
-                subject="Kode Reset Password",
-                recipients=[email]
-            )
+        msg = Message(
+            subject="Reset Password",
+            recipients=[email]
+        )
 
-            msg.body = f"""
-            Kode verifikasi reset password Anda:
+        msg.body = f"""
+        Klik link berikut untuk reset password:
 
-            {otp}
+        {reset_link}
 
-            Kode berlaku selama 10 menit.
-            """
+        Link ini berlaku selama 30 menit.
+        """
 
-            mail.send(msg)
+        mail.send(msg)
 
-            flash("Kode Verifikasi telah dikirim ke email Anda.", "success")
-            return redirect(url_for("auth.verify_otp"))
-        except TimeoutError:
-            flash("Server email tidak merespons. Silakan coba lagi.", "error")
-
-        except Exception:
-            flash("Terjadi kesalahan saat mengirim OTP.", "error")
+        flash("Link reset password sudah dikirim ke email.", "success")
+        return redirect(url_for("auth.login"))
 
     return render_template("auth/forgot-password.html")
 
-@auth_bp.route("/verify-otp", methods=["GET", "POST"])
-def verify_otp():
+@auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password_token(token):
+
+    try:
+        serializer = current_app.serializer
+        email = serializer.loads(token, salt="reset-password", max_age=1800)  # 30 menit
+    except SignatureExpired:
+        flash("Link reset sudah expired.", "error")
+        return redirect(url_for("auth.forgot_password"))
+    except BadSignature:
+        flash("Link tidak valid.", "error")
+        return redirect(url_for("auth.forgot_password"))
+
+    user = AuthService.get_user_by_email(email)
+
+    if not user:
+        flash("User tidak ditemukan.", "error")
+        return redirect(url_for("auth.forgot_password"))
 
     if request.method == "POST":
-
-        otp = request.form.get("otp")
-
-        if otp != session.get("reset_otp"):
-            flash("Kode OTP salah.", "error")
-            return redirect(url_for("auth.verify_otp"))
-
-        return redirect(url_for("auth.reset_password"))
-
-    return render_template("auth/verify-otp.html")
-
-@auth_bp.route("/reset-password", methods=["GET", "POST"])
-def reset_password():
-
-    if request.method == "POST":
-
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
 
         if password != confirm_password:
-            flash("Konfirmasi password tidak cocok.", "error")
-            return redirect(url_for("auth.reset_password"))
-
-        email = session.get("reset_email")
-
-        user = AuthService.get_user_by_email(email)
+            flash("Password tidak cocok.", "error")
+            return redirect(request.url)
 
         user.password = generate_password_hash(password)
-
         db.session.commit()
 
-        session.pop("reset_email", None)
-        session.pop("reset_otp", None)
-
         flash("Password berhasil diubah.", "success")
-
         return redirect(url_for("auth.login"))
 
     return render_template("auth/reset-password.html")

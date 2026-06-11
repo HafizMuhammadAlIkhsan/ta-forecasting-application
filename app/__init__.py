@@ -24,6 +24,9 @@ def create_app():
     from app.controllers.auth_controller import auth_bp
     from app.controllers.main_controller import main_bp
     from app.controllers.dashboard_controller import dashboard_bp
+    from itsdangerous import URLSafeTimedSerializer
+
+    app.serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
