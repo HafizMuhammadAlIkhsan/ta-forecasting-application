@@ -11,7 +11,7 @@ dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
 
 @dashboard_bp.route("/", methods=["GET"])
-# @login_required
+@login_required
 def index():
     simulations = SimulationRepository.get_all_ordered_by_newest()
 
