@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to VM
+      - name: Deploy to VM via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}
@@ -18,11 +18,21 @@ jobs:
           password: ${{ secrets.VM_PASSWORD }}
           port: ${{ secrets.VM_PORT }}
           script: |
-            cd /opt/ta-forecasting
+            set -e
+
+            APP_DIR="/opt/ta-forecasting"
+
+            mkdir -p $APP_DIR
+            cd $APP_DIR
+
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/USERNAME/REPO.git .
+            else
+              git pull origin main
+            fi
 
             cat > .env << 'EOF'
             ${{ secrets.ENV_FILE }}
             EOF
 
-            git pull origin main
             docker compose up -d --build
