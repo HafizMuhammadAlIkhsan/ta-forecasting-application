@@ -21,12 +21,13 @@ jobs:
             set -e
 
             APP_DIR="/opt/ta-forecasting"
+            REPO_URL="https://github.com/HafizMuhammadAlIkhsan/ta-forecasting-application.git"
 
             mkdir -p $APP_DIR
             cd $APP_DIR
 
             if [ ! -d ".git" ]; then
-              git clone https://github.com/USERNAME/REPO.git .
+              git clone $REPO_URL .
             else
               git pull origin main
             fi
