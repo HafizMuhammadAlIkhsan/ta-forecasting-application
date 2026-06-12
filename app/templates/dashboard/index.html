@@ -81,14 +81,16 @@
 
 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
     <div></div>
-    {% if package_ids %}
+    {% set hidden_package_ids = [80, 82, 83] %}
+    {% set visible_package_ids = package_ids | reject('in', hidden_package_ids) | list %}
+    {% if visible_package_ids %}
     <div class="d-flex align-items-center gap-2">
         <span class="text-muted small fw-semibold">Layanan:</span>
         <select id="package-select"
                 class="form-select form-select-sm"
                 style="width: auto;"
                 onchange="updateLineCharts(this.value)">
-            {% for pid in package_ids %}
+            {% for pid in visible_package_ids %}
             <option value="{{ pid }}">Package {{ pid }}</option>
             {% endfor %}
         </select>
@@ -136,7 +138,9 @@
     var estimationData = {{ estimation_data | tojson }};
     var forecastData   = {{ forecast_data   | tojson }};
     var historyData    = {{ history_data     | tojson }};
-    var packageIds     = {{ package_ids      | tojson }};
+    var hiddenPackageIds = [80, 82, 83];
+    var packageIds     = {{ package_ids      | tojson }}
+        .filter(function(pid){ return hiddenPackageIds.indexOf(Number(pid)) === -1; });
 
     var MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agus','Sep','Okt','Nov','Des'];
 
@@ -148,6 +152,32 @@
     function fmtMonth(isoStr) {
         var parts = isoStr.split('-');
         return MONTHS[parseInt(parts[1]) - 1];
+    }
+
+    function roundToNearestInteger(value) {
+        var num = Number(value);
+        return Number.isFinite(num) ? Math.round(num) : 0;
+    }
+
+    function fmtOriginalValue(value) {
+        var num = Number(value);
+        if (!Number.isFinite(num)) return value;
+        return num.toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 4,
+        });
+    }
+
+    function getLineYAxisMax(values) {
+        var numericValues = values
+            .map(function(value){ return Number(value); })
+            .filter(function(value){ return Number.isFinite(value); });
+        var rawMax = numericValues.length ? Math.max.apply(null, numericValues) : 0;
+        return Math.max(Math.ceil(rawMax / 10) * 10, 10);
+    }
+
+    function getLineYAxisRangeMax(yMax) {
+        return yMax + Math.max(yMax * 0.02, 1);
     }
 
     var estDiv = document.getElementById('utilizationChart');
@@ -238,7 +268,7 @@
         };
     }
 
-    function lineLayout(yTitle) {
+    function lineLayout(yTitle, yMax) {
         return {
             paper_bgcolor: 'white',
             plot_bgcolor:  'white',
@@ -250,6 +280,8 @@
             },
             yaxis: {
                 title: { text: yTitle, font: { size: 11 } },
+                range: [0, getLineYAxisRangeMax(yMax)],
+                dtick: 10,
                 gridcolor: 'rgba(0,0,0,.07)',
             },
             legend: {
@@ -272,29 +304,36 @@
 
         var fcstX = histDates.length ? [histDates[histDates.length - 1]].concat(fcstDates) : fcstDates;
         var fcstY = histVals.length  ? [histVals[histVals.length - 1]].concat(fcstVals)    : fcstVals;
+        var roundedHistVals = histVals.map(roundToNearestInteger);
+        var roundedFcstY = fcstY.map(roundToNearestInteger);
+        var histOriginalValues = histVals.map(fmtOriginalValue);
+        var fcstOriginalValues = fcstY.map(fmtOriginalValue);
+        var yMax = getLineYAxisMax(histVals.concat(fcstY));
 
         var histTrace = {
             x: histDates,
-            y: histVals,
+            y: roundedHistVals,
+            customdata: histOriginalValues,
             type: 'scatter',
             mode: 'lines+markers',
             name: 'Historis',
             line:   { color: color, width: 2, dash: 'solid', opacity: 0.35 },
             marker: { color: color, size: 5, opacity: 0.4 },
-            hovertemplate: '<b>%{x}</b><br>Historis: <b>%{y:.0f}</b><extra></extra>',
+            hovertemplate: '<b>%{x}</b><br>Historis: <b>%{customdata}</b><extra></extra>',
             opacity: 0.4,
         };
         var fcstTrace = {
             x: fcstX,
-            y: fcstY,
+            y: roundedFcstY,
+            customdata: fcstOriginalValues,
             type: 'scatter',
             mode: 'lines+markers',
             name: 'Forecast',
             line:   { color: color, width: 2.5 },
             marker: { color: color, size: 6 },
-            hovertemplate: '<b>%{x}</b><br>Forecast: <b>%{y:.1f}</b><extra></extra>',
+            hovertemplate: '<b>%{x}</b><br>Forecast: <b>%{customdata}</b><extra></extra>',
         };
-        Plotly.react(div, [histTrace, fcstTrace], lineLayout(yTitle), {
+        Plotly.react(div, [histTrace, fcstTrace], lineLayout(yTitle, yMax), {
             responsive: true,
             displayModeBar: false,
         });
