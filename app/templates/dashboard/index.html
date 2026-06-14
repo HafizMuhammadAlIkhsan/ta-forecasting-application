@@ -81,7 +81,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
     <div></div>
-    {% set hidden_package_ids = [80, 82, 83] %}
+    {% set hidden_package_ids = [81, 82, 83] %}
     {% set visible_package_ids = package_ids | reject('in', hidden_package_ids) | list %}
     {% if visible_package_ids %}
     <div class="d-flex align-items-center gap-2">
