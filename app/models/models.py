@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from flask_login import UserMixin
 from app import db
 
@@ -59,7 +60,7 @@ class ServerForecastSimulation(db.Model):
     created_at = db.Column(
         db.DateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(ZoneInfo("Asia/Jakarta")),
     )
 
     forecast_results = db.relationship(
