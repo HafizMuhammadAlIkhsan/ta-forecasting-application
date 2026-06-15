@@ -37,3 +37,10 @@ jobs:
             EOF
 
             docker compose up -d --build
+
+            until docker exec flask_app true 2>/dev/null; do
+              echo "Waiting for container..."
+              sleep 2
+            done
+
+            docker exec flask_app flask db-reset
