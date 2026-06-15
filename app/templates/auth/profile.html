@@ -12,15 +12,14 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
 
-            <!-- Informasi Akun -->
-            <div class="card bg-dark text-white border-0 shadow-sm mb-4"
-                style="border-radius: 20px;">
+            <div class="card bg-white text-dark shadow-sm mb-4"
+                style="border-radius: 20px; border: 1px solid #e3e8f0;">
                 <div class="card-body">
-                    <h6 class="text-uppercase text-primary mb-3">Informasi Akun</h6>
+                    <h6 class="text-uppercase mb-3" style="color: #1c75bc;">Informasi Akun</h6>
 
                     <label class="form-label">Email</label>
                     <input type="text"
-                        class="form-control bg-secondary text-white border-0"
+                        class="form-control"
                         value="{{ current_user.email }}"
                         disabled>
 
@@ -30,10 +29,10 @@
                 </div>
             </div>
 
-            <div class="card bg-dark text-white border-0 shadow-sm"
-                style="border-radius: 20px;">
+            <div class="card bg-white text-dark shadow-sm"
+                style="border-radius: 20px; border: 1px solid #e3e8f0;">
                 <div class="card-body">
-                    <h6 class="text-uppercase text-primary mb-3">Ubah Password</h6>
+                    <h6 class="text-uppercase mb-3" style="color: #1c75bc;">Ubah Password</h6>
 
                     <form method="POST" action="{{ url_for('auth.update_password') }}">
 
@@ -83,7 +82,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn w-100 text-white" style="background-color: #1c75bc; border-color: #1c75bc;">
                             <i class="fa-solid fa-lock me-2"></i>Simpan Password
                         </button>
                     </form>

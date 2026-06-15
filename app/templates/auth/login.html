@@ -2,36 +2,40 @@
 {% set hide_chrome = true %}
 {% block title %}Login — ForecastNet{% endblock %}
 {% block content %}
-<div class="container vh-100 d-flex align-items-center justify-content-center">
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center" style="background-color: #1c75bc;">
     <div
-        class="card border-secondary shadow-lg bg-dark text-light"
+        class="card shadow-lg bg-white text-dark"
         style="width: 500px; border-radius: 20px;"
     >
         <div class="card-body p-5">
 
             <div class="text-center mb-3">
-                <div class="d-inline-flex justify-content-center align-items-center rounded" style="width:60px;height:60px;background-color:#1e2a3b;font-size:30px;">
+                <div class="d-inline-flex justify-content-center align-items-center rounded" style="width:60px;height:60px;background-color:#1c75bc;font-size:30px;">
                     <i class="fa-solid fa-display text-white"></i>
                 </div>
             </div>
 
             <h2 class="fw-bold text-center mb-2">ForecastNet</h2>
 
-            <p class="text-secondary text-center mb-4">Net Demand &amp; Server Utilization Forecasting</p>
+            <p class="text-center mb-4" style="color: #5a6b7d;">Net Demand &amp; Server Utilization Forecasting</p>
 
             <form method="POST">
 
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" name="email" class="form-control bg-secondary-subtle" placeholder="user@example.com" required>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-envelope text-muted"></i></span>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="user@example.com" required>
+                    </div>
                 </div>
 
                 <div class="mb-4">
                     <label for="password" class="form-label">Password</label>
 
                     <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-lock text-muted"></i></span>
                         <input type="password" id="password" name="password"
-                            class="form-control bg-secondary-subtle"
+                            class="form-control"
                             placeholder="••••••••" required>
 
                         <button class="btn btn-outline-secondary" type="button" id="togglePassword">
@@ -41,10 +45,10 @@
                 </div>
 
                 <div class="mb-4 text-end">
-                    <a class="text-light none text-decoration-none text-right" href="{{ url_for('auth.forgot_password') }}">Lupa Password?</a>
+                    <a class="text-decoration-none text-right" style="color: #1c75bc;" href="{{ url_for('auth.forgot_password') }}">Lupa Password?</a>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 py-2">
+                <button type="submit" class="btn w-100 py-2 text-white" style="background-color: #1c75bc; border-color: #1c75bc;">
                     Masuk
                 </button>
 
