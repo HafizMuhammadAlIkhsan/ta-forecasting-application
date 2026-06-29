@@ -45,10 +45,10 @@ def index():
 
             history_data = []
             for pid in package_ids:
-                monthly_df = ForecastService._aggregate_monthly(pid)
-                if monthly_df is None:
+                daily_df = ForecastService._aggregate_daily(pid)
+                if daily_df is None:
                     continue
-                for _, row in monthly_df.tail(12).iterrows():
+                for _, row in daily_df.iterrows():
                     history_data.append({
                         "package_id":      pid,
                         "date":            row["ds"].strftime("%Y-%m-%d"),
@@ -71,7 +71,7 @@ def index():
                 forecast_only = sorted(all_estimation, key=lambda r: r["date"])
 
             forecast_only.sort(key=lambda r: r["date"])
-            estimation_data = forecast_only[:selected_simulation.horizon_months]
+            estimation_data = forecast_only
 
     return render_template(
         "dashboard/index.html",

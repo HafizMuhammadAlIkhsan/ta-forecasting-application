@@ -51,9 +51,9 @@
     <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
             <div>
-                <h6 class="fw-bold mb-1">Persentase Penggunaan Kapasitas Server</h6>
+                <h6 class="fw-bold mb-1">Persentase Penggunaan Kapasitas Server Harian</h6>
                 <p class="text-muted small mb-0">
-                    Prediksi penggunaan kapasitas {{ selected_simulation.horizon_months }} bulan ke depan
+                    Prediksi penggunaan kapasitas harian {{ selected_simulation.horizon_months }} bulan ke depan
                 </p>
             </div>
             <div class="d-flex gap-2 align-items-center">
@@ -69,7 +69,29 @@
         </div>
 
         {% if estimation_data %}
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-4 col-lg-3">
+                    <label for="hist-start-date" class="form-label form-label-sm mb-1">Tanggal mulai</label>
+                    <input type="date" id="hist-start-date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4 col-lg-3">
+                    <label for="hist-end-date" class="form-label form-label-sm mb-1">Tanggal akhir</label>
+                    <input type="date" id="hist-end-date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4 col-lg-3 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="applyUtilizationFilter()">
+                        Terapkan
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetUtilizationFilter()">
+                        Reset
+                    </button>
+                </div>
+            </div>
             <div id="utilizationChart" style="width:100%; height:320px;"></div>
+            <div id="utilizationEmptyState" class="text-center text-muted py-4 small d-none">
+                <i class="fa-solid fa-chart-bar me-2"></i>
+                Tidak ada data estimasi pada rentang tanggal yang dipilih.
+            </div>
         {% else %}
             <div class="text-center text-muted py-4 small">
                 <i class="fa-solid fa-chart-bar me-2"></i>
@@ -142,18 +164,6 @@
     var packageIds     = {{ package_ids      | tojson }}
         .filter(function(pid){ return hiddenPackageIds.indexOf(Number(pid)) === -1; });
 
-    var MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agus','Sep','Okt','Nov','Des'];
-
-    function fmtDate(isoStr) {
-        var parts = isoStr.split('-');
-        return MONTHS[parseInt(parts[1]) - 1] + ' ' + parts[0];
-    }
-
-    function fmtMonth(isoStr) {
-        var parts = isoStr.split('-');
-        return MONTHS[parseInt(parts[1]) - 1];
-    }
-
     function roundToNearestInteger(value) {
         var num = Number(value);
         return Number.isFinite(num) ? Math.round(num) : 0;
@@ -180,37 +190,73 @@
         return yMax + Math.max(yMax * 0.02, 1);
     }
 
-    var estDiv = document.getElementById('utilizationChart');
-    if (estDiv && estimationData.length) {
-        var estLabels = estimationData.map(function(r){ return fmtMonth(r.date); });
-        var estValues = estimationData.map(function(r){ return r.utilization; });
-        var rawMax    = Math.max.apply(null, estValues);
-        var yMax      = Math.max(rawMax * 1.2, 10);
+    function sortByDateAscending(rows) {
+        return rows.slice().sort(function(a, b) {
+            return a.date.localeCompare(b.date);
+        });
+    }
 
-        // Kumpulkan tahun unik untuk label pada sumbu X
-        var years = Array.from(new Set(
-            estimationData.map(function(r){ return r.date.split('-')[0]; })
-        )).sort();
-        var yearLabel = years.join(' / ');
+    function getUtilizationFilterValues() {
+        var startInput = document.getElementById('hist-start-date');
+        var endInput = document.getElementById('hist-end-date');
+        return {
+            start: startInput ? startInput.value : '',
+            end: endInput ? endInput.value : '',
+        };
+    }
+
+    function getFilteredEstimationData() {
+        var filters = getUtilizationFilterValues();
+        return sortByDateAscending(estimationData).filter(function(row) {
+            var afterStart = !filters.start || row.date >= filters.start;
+            var beforeEnd = !filters.end || row.date <= filters.end;
+            return afterStart && beforeEnd;
+        });
+    }
+
+    function renderUtilizationChart(rows) {
+        var estDiv = document.getElementById('utilizationChart');
+        var emptyState = document.getElementById('utilizationEmptyState');
+
+        if (!estDiv) {
+            return;
+        }
+
+        if (!rows.length) {
+            estDiv.innerHTML = '';
+            if (emptyState) {
+                emptyState.classList.remove('d-none');
+            }
+            return;
+        }
+
+        if (emptyState) {
+            emptyState.classList.add('d-none');
+        }
+
+        var estValues = rows.map(function(r){ return r.utilization; });
+        var rawMax = Math.max.apply(null, estValues);
+        var yMax = Math.max(rawMax * 1.2, 10);
 
         var barTrace = {
-            x: estLabels,
+            x: rows.map(function(r){ return r.date; }),
             y: estValues,
             type: 'bar',
             name: 'Utilisasi (%)',
             marker: { color: '#3b5bdb', opacity: 0.85 },
-            hovertemplate: '<b>%{x} ' + yearLabel + '</b><br>Utilisasi: <b>%{y:.1f}%</b><extra></extra>',
+            hovertemplate: '<b>%{x|%d %b %Y}</b><br>Utilisasi: <b>%{y:.1f}%</b><extra></extra>',
         };
 
         var barLayout = {
             paper_bgcolor: 'white',
             plot_bgcolor:  'white',
-            bargap: 0.35,
+            bargap: 0.25,
             margin: { t: 10, r: 20, b: 70, l: 70 },
             xaxis: {
-                tickangle: 0,
+                type: 'date',
+                tickformat: '%d %b',
                 showgrid: false,
-                title: { text: yearLabel, font: { size: 11, color: '#6b7280' } },
+                title: { text: 'Tanggal', font: { size: 11, color: '#6b7280' } },
             },
             yaxis: {
                 ticksuffix: '%',
@@ -238,10 +284,80 @@
             },
         };
 
-        Plotly.newPlot(estDiv, [barTrace], barLayout, {
+        Plotly.react(estDiv, [barTrace], barLayout, {
             responsive: true,
             displayModeBar: false,
         });
+    }
+
+    function syncUtilizationFilterBounds() {
+        var startInput = document.getElementById('hist-start-date');
+        var endInput = document.getElementById('hist-end-date');
+
+        if (!startInput || !endInput || !estimationData.length) {
+            return;
+        }
+
+        var sortedDates = sortByDateAscending(estimationData).map(function(row) {
+            return row.date;
+        });
+
+        startInput.min = sortedDates[0];
+        startInput.max = sortedDates[sortedDates.length - 1];
+        endInput.min = sortedDates[0];
+        endInput.max = sortedDates[sortedDates.length - 1];
+
+        if (!startInput.value) {
+            startInput.value = sortedDates[0];
+        }
+
+        if (!endInput.value) {
+            endInput.value = sortedDates[sortedDates.length - 1];
+        }
+    }
+
+    window.applyUtilizationFilter = function() {
+        var filters = getUtilizationFilterValues();
+
+        if (filters.start && filters.end && filters.start > filters.end) {
+            var temp = filters.start;
+            filters.start = filters.end;
+            filters.end = temp;
+
+            var startInput = document.getElementById('hist-start-date');
+            var endInput = document.getElementById('hist-end-date');
+
+            if (startInput) {
+                startInput.value = filters.start;
+            }
+            if (endInput) {
+                endInput.value = filters.end;
+            }
+        }
+
+        renderUtilizationChart(getFilteredEstimationData());
+    };
+
+    window.resetUtilizationFilter = function() {
+        var startInput = document.getElementById('hist-start-date');
+        var endInput = document.getElementById('hist-end-date');
+        var sortedDates = sortByDateAscending(estimationData).map(function(row) {
+            return row.date;
+        });
+
+        if (startInput && sortedDates.length) {
+            startInput.value = sortedDates[0];
+        }
+        if (endInput && sortedDates.length) {
+            endInput.value = sortedDates[sortedDates.length - 1];
+        }
+
+        renderUtilizationChart(sortByDateAscending(estimationData));
+    };
+
+    syncUtilizationFilterBounds();
+    if (estimationData.length) {
+        renderUtilizationChart(getFilteredEstimationData());
     }
 
     function getPackageData(pkgId) {
@@ -251,7 +367,6 @@
 
         hist.sort(function(a, b){ return a.date.localeCompare(b.date); });
 
-        // Forecast mencakup nilai fitted (1 tahun ke belakang, sejalan dengan histDates) sampai dengan akhir horizon forecast, sehingga tersambung dengan line historis
         var minHistDate = hist.length ? hist[0].date : null;
         if (minHistDate) {
             fcst = fcst.filter(function(r){ return r.date >= minHistDate; });
@@ -259,10 +374,10 @@
         fcst.sort(function(a, b){ return a.date.localeCompare(b.date); });
 
         return {
-            histDates: hist.map(function(r){ return fmtDate(r.date); }),
+            histDates: hist.map(function(r){ return r.date; }),
             histSub:   hist.map(function(r){ return r.total_subscribe; }),
             histTrm:   hist.map(function(r){ return r.total_terminate; }),
-            fcstDates: fcst.map(function(r){ return fmtDate(r.date); }),
+            fcstDates: fcst.map(function(r){ return r.date; }),
             fcstSub:   fcst.map(function(r){ return r.forecast_subscribe; }),
             fcstTrm:   fcst.map(function(r){ return r.forecast_terminate; }),
         };
@@ -274,8 +389,10 @@
             plot_bgcolor:  'white',
             margin: { t: 10, r: 20, b: 80, l: 65 },
             xaxis: {
-                title: { text: 'Periode Waktu (Bulan)', font: { size: 11 } },
+                type: 'date',
+                title: { text: 'Tanggal', font: { size: 11 } },
                 tickangle: -30,
+                tickformat: '%d %b',
                 showgrid: false,
             },
             yaxis: {
@@ -319,7 +436,7 @@
             name: 'Historis',
             line:   { color: HISTORIS_COLOR, width: 2.5 },
             marker: { color: HISTORIS_COLOR, size: 6 },
-            hovertemplate: '<b>%{x}</b><br>Historis: <b>%{customdata}</b><extra></extra>',
+            hovertemplate: '<b>%{x|%d %b %Y}</b><br>Historis: <b>%{customdata}</b><extra></extra>',
         };
         var fcstTrace = {
             x: fcstDates,
@@ -330,7 +447,7 @@
             name: 'Forecast',
             line:   { color: forecastColor, width: 2.5 },
             marker: { color: forecastColor, size: 6 },
-            hovertemplate: '<b>%{x}</b><br>Forecast: <b>%{customdata}</b><extra></extra>',
+            hovertemplate: '<b>%{x|%d %b %Y}</b><br>Forecast: <b>%{customdata}</b><extra></extra>',
         };
         Plotly.react(div, [histTrace, fcstTrace], lineLayout(yTitle, yMax), {
             responsive: true,

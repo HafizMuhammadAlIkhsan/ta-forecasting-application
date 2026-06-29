@@ -17,22 +17,28 @@ class ForecastService:
         all_forecast_records = []
 
         for package_id in package_ids:
-            monthly_df = ForecastService._aggregate_monthly(package_id)
-            if monthly_df is None or len(monthly_df) < 2:
+            daily_df = ForecastService._aggregate_daily(package_id)
+            if daily_df is None or len(daily_df) < 2:
                 continue
 
+            last_history_date = pd.Timestamp(daily_df["ds"].iloc[-1])
+            forecast_end_date = last_history_date + pd.DateOffset(
+                months=simulation.horizon_months
+            )
+            horizon_days = max((forecast_end_date - last_history_date).days, 1)
+
             subs_forecast = ForecastService._run_prophet(
-                monthly_df[["ds", "total_subscribe"]].rename(
+                daily_df[["ds", "total_subscribe"]].rename(
                     columns={"total_subscribe": "y"}
                 ),
-                simulation.horizon_months,
+                horizon_days,
             )
 
             terminate_forecast = ForecastService._run_prophet(
-                monthly_df[["ds", "total_terminate"]].rename(
+                daily_df[["ds", "total_terminate"]].rename(
                     columns={"total_terminate": "y"}
                 ),
-                simulation.horizon_months,
+                horizon_days,
             )
 
             merged = subs_forecast.rename(columns={"yhat": "forecast_subscribe"})
@@ -52,7 +58,7 @@ class ForecastService:
         ForecastResultRepository.bulk_insert(all_forecast_records)
 
     @staticmethod
-    def _aggregate_monthly(package_id: int) -> pd.DataFrame | None:
+    def _aggregate_daily(package_id: int) -> pd.DataFrame | None:
         rows = (
             db.session.query(Dataset)
             .filter_by(package_id=package_id)
@@ -75,11 +81,11 @@ class ForecastService:
         )
 
         df = df.set_index("ds")
-        monthly = df.resample("MS").sum()
-        monthly = monthly.asfreq("MS", fill_value=0.0)
-        monthly = monthly.reset_index()
+        daily = df.resample("D").sum()
+        daily = daily.asfreq("D", fill_value=0.0)
+        daily = daily.reset_index()
 
-        return monthly
+        return daily
 
     @staticmethod
     def _run_prophet(df: pd.DataFrame, horizon_months: int) -> pd.DataFrame:
@@ -90,6 +96,6 @@ class ForecastService:
             seasonality_mode="additive",
         )
         model.fit(df)
-        future = model.make_future_dataframe(periods=horizon_months, freq="MS")
+        future = model.make_future_dataframe(periods=horizon_months, freq="D")
         forecast = model.predict(future)
         return forecast[["ds", "yhat"]]
