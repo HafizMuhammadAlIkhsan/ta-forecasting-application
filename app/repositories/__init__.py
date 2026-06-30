@@ -3,5 +3,6 @@ from .repositories import (
     SpecificationVMRepository,
     SimulationRepository,
     ForecastResultRepository,
+    ForecastMetricRepository,
     ServerEstimationResultRepository,
 )

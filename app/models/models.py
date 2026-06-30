@@ -75,6 +75,12 @@ class ServerForecastSimulation(db.Model):
         lazy=True,
         cascade="all, delete-orphan",
     )
+    forecast_metrics = db.relationship(
+        "ForecastMetric",
+        backref="simulation",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return (
@@ -111,6 +117,42 @@ class ForecastResult(db.Model):
         return (
             f"<ForecastResult package_id={self.package_id} "
             f"date={self.date} sim={self.simulation_id}>"
+        )
+
+
+class ForecastMetric(db.Model):
+    """Menyimpan ringkasan error MAE, RMSE, SMAPE per package_id untuk satu simulasi."""
+
+    __tablename__ = "forecast_metric"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    simulation_id = db.Column(
+        db.Integer,
+        db.ForeignKey("server_forecast_simulation.simulation_id"),
+        nullable=False,
+        index=True,
+    )
+    package_id = db.Column(db.Integer, nullable=False, index=True)
+
+    subscribe_mae = db.Column(db.Float, nullable=True)
+    subscribe_rmse = db.Column(db.Float, nullable=True)
+    subscribe_smape = db.Column(db.Float, nullable=True)
+
+    terminate_mae = db.Column(db.Float, nullable=True)
+    terminate_rmse = db.Column(db.Float, nullable=True)
+    terminate_smape = db.Column(db.Float, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "simulation_id", "package_id",
+            name="uq_forecast_metric_sim_pkg",
+        ),
+    )
+
+    def __repr__(self):
+        return (
+            f"<ForecastMetric package_id={self.package_id} "
+            f"sim={self.simulation_id}>"
         )
 
 

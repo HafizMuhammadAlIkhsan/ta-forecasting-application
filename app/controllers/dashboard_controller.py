@@ -1,9 +1,12 @@
+import pandas as pd
+
 from flask import Blueprint, render_template, request
 from flask_login import login_required
 from app.repositories import (
     SimulationRepository,
     ForecastResultRepository,
     ServerEstimationResultRepository,
+    ForecastMetricRepository,
 )
 from app.services.forecast_service import ForecastService
 
@@ -24,12 +27,14 @@ def index():
     forecast_data    = []
     history_data     = []
     package_ids      = []
+    forecast_metrics = {}
 
     if selected_simulation_id:
         selected_simulation = SimulationRepository.get_by_id(selected_simulation_id)
         if selected_simulation:
             forecast_results   = ForecastResultRepository.get_by_simulation_id(selected_simulation_id)
             estimation_results = ServerEstimationResultRepository.get_by_simulation_id(selected_simulation_id)
+            metric_results     = ForecastMetricRepository.get_by_simulation_id(selected_simulation_id)
 
             forecast_data = [
                 {
@@ -43,11 +48,26 @@ def index():
 
             package_ids = sorted({r["package_id"] for r in forecast_data})
 
+            for m in metric_results:
+                forecast_metrics[m.package_id] = {
+                    "subscribe": {
+                        "mae": m.subscribe_mae,
+                        "rmse": m.subscribe_rmse,
+                        "smape": m.subscribe_smape,
+                    },
+                    "terminate": {
+                        "mae": m.terminate_mae,
+                        "rmse": m.terminate_rmse,
+                        "smape": m.terminate_smape,
+                    },
+                }
+
             history_data = []
             for pid in package_ids:
                 daily_df = ForecastService._aggregate_daily(pid)
                 if daily_df is None:
                     continue
+
                 for _, row in daily_df.iterrows():
                     history_data.append({
                         "package_id":      pid,
@@ -81,4 +101,5 @@ def index():
         forecast_data=forecast_data,
         history_data=history_data,
         package_ids=package_ids,
+        forecast_metrics=forecast_metrics,
     )

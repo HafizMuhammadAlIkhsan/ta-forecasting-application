@@ -101,8 +101,25 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-    <div></div>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+    <div class="d-flex align-items-end gap-2 flex-wrap">
+        <div>
+            <label for="line-start-date" class="form-label form-label-sm mb-1">Tanggal mulai</label>
+            <input type="date" id="line-start-date" class="form-control form-control-sm">
+        </div>
+        <div>
+            <label for="line-end-date" class="form-label form-label-sm mb-1">Tanggal akhir</label>
+            <input type="date" id="line-end-date" class="form-control form-control-sm">
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-primary" onclick="applyLineFilter()">
+                Terapkan
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetLineFilter()">
+                Reset
+            </button>
+        </div>
+    </div>
     {% set hidden_package_ids = [81, 82, 83] %}
     {% set visible_package_ids = package_ids | reject('in', hidden_package_ids) | list %}
     {% if visible_package_ids %}
@@ -144,6 +161,18 @@
     </div>
 </div>
 
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+                <h6 class="fw-bold mb-1">Ringkasan Error Model</h6>
+                <p class="text-muted small mb-0">MAE, RMSE, dan SMAPE untuk subscribe dan terminate</p>
+            </div>
+        </div>
+        <div id="forecastMetricsSummary" class="row g-3"></div>
+    </div>
+</div>
+
 {% else %}
 <div class="card border-0 shadow-sm rounded-4">
     <div class="card-body text-center py-4 text-muted small">
@@ -160,9 +189,11 @@
     var estimationData = {{ estimation_data | tojson }};
     var forecastData   = {{ forecast_data   | tojson }};
     var historyData    = {{ history_data     | tojson }};
+    var forecastMetrics = {{ forecast_metrics | tojson }};
     var hiddenPackageIds = [80, 82, 83];
     var packageIds     = {{ package_ids      | tojson }}
         .filter(function(pid){ return hiddenPackageIds.indexOf(Number(pid)) === -1; });
+    var currentPackageId = packageIds.length ? Number(packageIds[0]) : null;
 
     function roundToNearestInteger(value) {
         var num = Number(value);
@@ -188,6 +219,44 @@
 
     function getLineYAxisRangeMax(yMax) {
         return yMax + Math.max(yMax * 0.02, 1);
+    }
+
+    function getLineFilterValues() {
+        var startInput = document.getElementById('line-start-date');
+        var endInput = document.getElementById('line-end-date');
+        return {
+            start: startInput ? startInput.value : '',
+            end: endInput ? endInput.value : '',
+        };
+    }
+
+    function filterRowsByDate(rows, startDate, endDate) {
+        return rows.filter(function(row) {
+            var afterStart = !startDate || row.date >= startDate;
+            var beforeEnd = !endDate || row.date <= endDate;
+            return afterStart && beforeEnd;
+        });
+    }
+
+
+
+    function getMetricValue(value, isPercent) {
+        var num = Number(value);
+        if (!Number.isFinite(num)) {
+            return '-';
+        }
+        return num.toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: isPercent ? 2 : 4,
+        }) + (isPercent ? '%' : '');
+    }
+
+    function getPackageMetrics(pkgId) {
+        if (pkgId === null || pkgId === undefined) {
+            return { subscribe: {}, terminate: {} };
+        }
+
+        return forecastMetrics[String(Number(pkgId))] || forecastMetrics[Number(pkgId)] || { subscribe: {}, terminate: {} };
     }
 
     function sortByDateAscending(rows) {
@@ -360,7 +429,7 @@
         renderUtilizationChart(getFilteredEstimationData());
     }
 
-    function getPackageData(pkgId) {
+    function getPackageData(pkgId, startDate, endDate) {
         var pid  = parseInt(pkgId);
         var hist = historyData.filter(function(r){ return r.package_id === pid; });
         var fcst = forecastData.filter(function(r){ return r.package_id === pid; });
@@ -368,10 +437,14 @@
         hist.sort(function(a, b){ return a.date.localeCompare(b.date); });
 
         var minHistDate = hist.length ? hist[0].date : null;
+
         if (minHistDate) {
             fcst = fcst.filter(function(r){ return r.date >= minHistDate; });
         }
         fcst.sort(function(a, b){ return a.date.localeCompare(b.date); });
+
+        hist = filterRowsByDate(hist, startDate, endDate);
+        fcst = filterRowsByDate(fcst, startDate, endDate);
 
         return {
             histDates: hist.map(function(r){ return r.date; }),
@@ -455,16 +528,124 @@
         });
     }
 
-    window.updateLineCharts = function(pkgId) {
-        if (!pkgId && packageIds.length) pkgId = packageIds[0];
-        if (!pkgId) return;
-        var d = getPackageData(pkgId);
+    function renderMetricSummary(pkgId) {
+        var container = document.getElementById('forecastMetricsSummary');
+        if (!container) {
+            return;
+        }
+
+        var metrics = getPackageMetrics(pkgId);
+        var sections = [
+            { label: 'Subscribe', metrics: metrics.subscribe || {}, color: '#3b5bdb' },
+            { label: 'Terminate', metrics: metrics.terminate || {}, color: '#ef4444' },
+        ];
+
+        container.innerHTML = sections.map(function(section) {
+            return '' +
+                '<div class="col-lg-6">' +
+                    '<div class="border rounded-4 p-3 h-100" style="background:#f8fafc; border-color: rgba(148,163,184,.35) !important;">' +
+                        '<div class="d-flex align-items-center justify-content-between mb-3">' +
+                            '<div>' +
+                                '<div class="text-muted small">Ringkasan ' + section.label + '</div>' +
+                                '<div class="fw-bold">Error ' + section.label + '</div>' +
+                            '</div>' +
+                            '<span class="badge rounded-pill" style="background:' + section.color + '1a; color:' + section.color + '; border:1px solid ' + section.color + '33;">' + section.label + '</span>' +
+                        '</div>' +
+                        '<div class="row g-2">' +
+                            metricCard('MAE', section.metrics.mae, false) +
+                            metricCard('RMSE', section.metrics.rmse, false) +
+                            metricCard('SMAPE', section.metrics.smape, true) +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+        }).join('');
+    }
+
+    function metricCard(label, value, isPercent) {
+        return '' +
+            '<div class="col-4">' +
+                '<div class="border rounded-3 p-2 h-100" style="background:#fff; border-color: rgba(148,163,184,.28) !important;">' +
+                    '<div class="text-muted" style="font-size:.72rem;">' + label + '</div>' +
+                    '<div class="fw-semibold">' + getMetricValue(value, isPercent) + '</div>' +
+                '</div>' +
+            '</div>';
+    }
+
+    function syncLineFilterBounds(pkgId) {
+        var startInput = document.getElementById('line-start-date');
+        var endInput = document.getElementById('line-end-date');
+        if (!startInput || !endInput) {
+            return;
+        }
+
+        var data = getPackageData(pkgId, '', '');
+        var allDates = data.histDates.concat(data.fcstDates).sort();
+
+        if (!allDates.length) {
+            return;
+        }
+
+        var minDate = allDates[0];
+        var maxDate = allDates[allDates.length - 1];
+
+        startInput.min = minDate;
+        startInput.max = maxDate;
+        endInput.min = minDate;
+        endInput.max = maxDate;
+
+        if (!startInput.value || startInput.value < minDate || startInput.value > maxDate) {
+            startInput.value = minDate;
+        }
+
+        if (!endInput.value || endInput.value < minDate || endInput.value > maxDate) {
+            endInput.value = maxDate;
+        }
+    }
+
+    function renderCurrentPackageCharts() {
+        if (!currentPackageId) {
+            return;
+        }
+
+        var filters = getLineFilterValues();
+        var startDate = filters.start;
+        var endDate = filters.end;
+        var data = getPackageData(currentPackageId, startDate, endDate);
+
+        renderMetricSummary(currentPackageId);
+
         buildPlotlyLine('subscribeChart',
-            d.histDates, d.histSub, d.fcstDates, d.fcstSub,
+            data.histDates, data.histSub, data.fcstDates, data.fcstSub,
             'Jumlah Subscription VM', '#3b5bdb');
         buildPlotlyLine('terminateChart',
-            d.histDates, d.histTrm, d.fcstDates, d.fcstTrm,
+            data.histDates, data.histTrm, data.fcstDates, data.fcstTrm,
             'Jumlah Terminasi VM', '#ef4444');
+    }
+
+    window.updateLineCharts = function(pkgId) {
+        if (!pkgId && packageIds.length) {
+            pkgId = packageIds[0];
+        }
+        if (!pkgId) {
+            return;
+        }
+
+        currentPackageId = Number(pkgId);
+        syncLineFilterBounds(currentPackageId);
+        renderCurrentPackageCharts();
+    };
+
+    window.applyLineFilter = function() {
+        renderCurrentPackageCharts();
+    };
+
+    window.resetLineFilter = function() {
+        if (!currentPackageId) {
+            return;
+        }
+
+        syncLineFilterBounds(currentPackageId);
+        renderCurrentPackageCharts();
     };
 
     if (packageIds.length) {
