@@ -33,8 +33,6 @@ class Dataset(db.Model):
 
 
 class SpecificationVM(db.Model):
-    """Spesifikasi resource per package/VM (diisi melalui seeder)."""
-
     __tablename__ = "specification_vm"
 
     package_id = db.Column(db.Integer, primary_key=True)
@@ -47,8 +45,6 @@ class SpecificationVM(db.Model):
 
 
 class ServerForecastSimulation(db.Model):
-    """Menyimpan parameter input setiap kali user menjalankan simulasi forecasting."""
-
     __tablename__ = "server_forecast_simulation"
 
     simulation_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -90,8 +86,6 @@ class ServerForecastSimulation(db.Model):
 
 
 class ForecastResult(db.Model):
-    """Hasil forecasting subscribe dan terminate per package per bulan."""
-
     __tablename__ = "forecast_result"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -121,8 +115,6 @@ class ForecastResult(db.Model):
 
 
 class ForecastMetric(db.Model):
-    """Menyimpan ringkasan error MAE, RMSE, SMAPE per package_id untuk satu simulasi."""
-
     __tablename__ = "forecast_metric"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -157,8 +149,6 @@ class ForecastMetric(db.Model):
 
 
 class ServerEstimationResult(db.Model):
-    """Hasil estimasi utilisasi server akhir per bulan per simulasi."""
-
     __tablename__ = "server_estimation_result"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
