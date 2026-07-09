@@ -238,6 +238,8 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengunggah...';
         btn.disabled = true;
         document.getElementById('btn-batal').disabled = true;
+        const btnRun = document.getElementById('btn-run');
+        if (btnRun) btnRun.disabled = true;
     });
 
     document.getElementById('forecast-form').addEventListener('submit', function () {

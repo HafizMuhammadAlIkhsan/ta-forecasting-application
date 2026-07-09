@@ -201,8 +201,6 @@
     var currentPackageId = packageIds.length ? Number(packageIds[0]) : null;
     var dailyUtilVisible = false;
 
-    /* ─── helpers ─── */
-
     function roundToNearestInteger(value) {
         var num = Number(value);
         return Number.isFinite(num) ? Math.round(num) : 0;
@@ -242,8 +240,6 @@
         return forecastMetrics[String(Number(pkgId))] || forecastMetrics[Number(pkgId)] || { subscribe: {}, terminate: {} };
     }
 
-    /* ─── utilisasi: monthly bar chart ─── */
-
     function aggregateMonthlyAvg(rows, valueKey) {
         var monthly = {};
         rows.forEach(function(row) {
@@ -266,7 +262,6 @@
         if (!div) return;
         var monthly = aggregateMonthlyAvg(rows, 'utilization');
 
-        /* buang bulan parsial: bulan yang sama dengan bulan terakhir data historis */
         if (historyData.length) {
             var allHistDates = historyData.map(function(r) { return r.date; }).sort();
             var lastHistMonth = allHistDates[allHistDates.length - 1].substring(0, 7);
@@ -298,8 +293,6 @@
                           font: { color: 'white', size: 12 }, align: 'left' },
         }, { responsive: true, displayModeBar: false });
     }
-
-    /* ─── utilisasi: daily line chart ─── */
 
     function renderDailyUtilizationChart(rows) {
         var div = document.getElementById('utilizationDailyChart');
@@ -367,7 +360,6 @@
         if (!s || !e || !estimationData.length) return;
         var sorted = sortByDateAscending(estimationData).map(function(r) { return r.date; });
 
-        /* hitung tanggal 1 dari bulan pertama yang penuh (setelah bulan terakhir historis) */
         var firstFullMonthDate = sorted[0];
         if (historyData.length) {
             var allHistDates = historyData.map(function(r) { return r.date; }).sort();
@@ -391,7 +383,6 @@
         bootstrap.Toast.getOrCreateInstance(el, { delay: 2500 }).show();
     }
 
-    /* filter hanya mempengaruhi daily chart */
     window.applyUtilizationFilter = function() {
         var f = getUtilizationFilterValues();
         if (f.start && f.end && f.start > f.end) {
@@ -430,8 +421,6 @@
         }
     };
 
-    /* ─── forecast line charts — data bulanan ─── */
-
     function aggregateMonthlySum(rows, valueKeys) {
         var monthly = {};
         rows.forEach(function(row) {
@@ -459,13 +448,10 @@
             var d = new Date(maxHistDate);
             d.setFullYear(d.getFullYear() - 1);
             var oneYearBack = d.toISOString().substring(0, 10);
-            /* historis: 1 tahun ke belakang */
             hist = hist.filter(function(r) { return r.date >= oneYearBack; });
-            /* forecast: mulai dari titik yang sama (historis + future) */
             fcst = fcst.filter(function(r) { return r.date >= oneYearBack; });
         }
 
-        /* agregasi ke bulanan */
         var histM = aggregateMonthlySum(hist, ['total_subscribe', 'total_terminate']);
         var fcstM = aggregateMonthlySum(fcst, ['forecast_subscribe', 'forecast_terminate']);
 
@@ -527,8 +513,6 @@
         ], lineLayout(yTitle, yMax), { responsive: true, displayModeBar: false });
     }
 
-    /* ─── error metrics ─── */
-
     function renderMetricSummary(pkgId) {
         var container = document.getElementById('forecastMetricsSummary');
         if (!container) return;
@@ -565,8 +549,6 @@
             '</div>' +
         '</div>';
     }
-
-    /* ─── render & init ─── */
 
     function renderCurrentPackageCharts() {
         if (!currentPackageId) return;
