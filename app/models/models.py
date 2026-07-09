@@ -33,8 +33,6 @@ class Dataset(db.Model):
 
 
 class SpecificationVM(db.Model):
-    """Spesifikasi resource per package/VM (diisi melalui seeder)."""
-
     __tablename__ = "specification_vm"
 
     package_id = db.Column(db.Integer, primary_key=True)
@@ -47,8 +45,6 @@ class SpecificationVM(db.Model):
 
 
 class ServerForecastSimulation(db.Model):
-    """Menyimpan parameter input setiap kali user menjalankan simulasi forecasting."""
-
     __tablename__ = "server_forecast_simulation"
 
     simulation_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -75,6 +71,12 @@ class ServerForecastSimulation(db.Model):
         lazy=True,
         cascade="all, delete-orphan",
     )
+    forecast_metrics = db.relationship(
+        "ForecastMetric",
+        backref="simulation",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return (
@@ -84,8 +86,6 @@ class ServerForecastSimulation(db.Model):
 
 
 class ForecastResult(db.Model):
-    """Hasil forecasting subscribe dan terminate per package per bulan."""
-
     __tablename__ = "forecast_result"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -114,9 +114,41 @@ class ForecastResult(db.Model):
         )
 
 
-class ServerEstimationResult(db.Model):
-    """Hasil estimasi utilisasi server akhir per bulan per simulasi."""
+class ForecastMetric(db.Model):
+    __tablename__ = "forecast_metric"
 
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    simulation_id = db.Column(
+        db.Integer,
+        db.ForeignKey("server_forecast_simulation.simulation_id"),
+        nullable=False,
+        index=True,
+    )
+    package_id = db.Column(db.Integer, nullable=False, index=True)
+
+    subscribe_mae = db.Column(db.Float, nullable=True)
+    subscribe_rmse = db.Column(db.Float, nullable=True)
+    subscribe_smape = db.Column(db.Float, nullable=True)
+
+    terminate_mae = db.Column(db.Float, nullable=True)
+    terminate_rmse = db.Column(db.Float, nullable=True)
+    terminate_smape = db.Column(db.Float, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "simulation_id", "package_id",
+            name="uq_forecast_metric_sim_pkg",
+        ),
+    )
+
+    def __repr__(self):
+        return (
+            f"<ForecastMetric package_id={self.package_id} "
+            f"sim={self.simulation_id}>"
+        )
+
+
+class ServerEstimationResult(db.Model):
     __tablename__ = "server_estimation_result"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

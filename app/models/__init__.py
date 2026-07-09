@@ -4,5 +4,6 @@ from .models import (
     SpecificationVM,
     ServerForecastSimulation,
     ForecastResult,
+    ForecastMetric,
     ServerEstimationResult,
 )

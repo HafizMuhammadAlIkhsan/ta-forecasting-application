@@ -4,7 +4,8 @@ from app.models import (
     SpecificationVM,
     ServerForecastSimulation,
     ForecastResult,
-    ServerEstimationResult
+    ServerEstimationResult,
+    ForecastMetric
 )
 
 class DatasetRepository:
@@ -124,5 +125,22 @@ class ServerEstimationResultRepository:
             ServerEstimationResult.query
             .filter_by(simulation_id=simulation_id)
             .order_by(ServerEstimationResult.date)
+            .all()
+        )
+
+class ForecastMetricRepository:
+    @staticmethod
+    def bulk_insert(records: list[dict]) -> None:
+        if not records:
+            return
+        db.session.bulk_insert_mappings(ForecastMetric, records)
+        db.session.commit()
+
+    @staticmethod
+    def get_by_simulation_id(simulation_id: int) -> list[ForecastMetric]:
+        return (
+            ForecastMetric.query
+            .filter_by(simulation_id=simulation_id)
+            .order_by(ForecastMetric.package_id)
             .all()
         )
