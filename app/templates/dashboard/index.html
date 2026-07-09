@@ -14,7 +14,7 @@
         <div class="fs-1 mb-3">📊</div>
         <h6 class="fw-bold mb-2">Belum ada simulasi</h6>
         <p class="text-muted small mb-3">Jalankan forecast terlebih dahulu untuk melihat hasil di dashboard.</p>
-        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-sm">
+        <a href="{{ url_for('forecast.index') }}" class="btn btn-primary btn-sm">
             <i class="fa-solid fa-upload me-2"></i>Upload &amp; Jalankan Forecast
         </a>
     </div>
@@ -47,13 +47,14 @@
 
 {% if selected_simulation %}
 
+<!-- Utilisasi Server -->
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
             <div>
-                <h6 class="fw-bold mb-1">Persentase Penggunaan Kapasitas Server Harian</h6>
+                <h6 class="fw-bold mb-1">Persentase Penggunaan Kapasitas Server</h6>
                 <p class="text-muted small mb-0">
-                    Prediksi penggunaan kapasitas harian {{ selected_simulation.horizon_months }} bulan ke depan
+                    Prediksi rata-rata penggunaan kapasitas per bulan — {{ selected_simulation.horizon_months }} bulan ke depan
                 </p>
             </div>
             <div class="d-flex gap-2 align-items-center">
@@ -69,28 +70,47 @@
         </div>
 
         {% if estimation_data %}
-            <div class="row g-2 align-items-end mb-3">
-                <div class="col-md-4 col-lg-3">
-                    <label for="hist-start-date" class="form-label form-label-sm mb-1">Tanggal mulai</label>
-                    <input type="date" id="hist-start-date" class="form-control form-control-sm">
-                </div>
-                <div class="col-md-4 col-lg-3">
-                    <label for="hist-end-date" class="form-label form-label-sm mb-1">Tanggal akhir</label>
-                    <input type="date" id="hist-end-date" class="form-control form-control-sm">
-                </div>
-                <div class="col-md-4 col-lg-3 d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-primary" onclick="applyUtilizationFilter()">
-                        Terapkan
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetUtilizationFilter()">
-                        Reset
-                    </button>
-                </div>
-            </div>
+            <!-- Monthly bar chart — no date filter here -->
             <div id="utilizationChart" style="width:100%; height:320px;"></div>
             <div id="utilizationEmptyState" class="text-center text-muted py-4 small d-none">
                 <i class="fa-solid fa-chart-bar me-2"></i>
-                Tidak ada data estimasi pada rentang tanggal yang dipilih.
+                Tidak ada data estimasi.
+            </div>
+
+            <!-- Toggle detail harian -->
+            <div class="text-center mt-2">
+                <button type="button"
+                        class="btn btn-link btn-sm text-muted p-0 text-decoration-none"
+                        id="btn-toggle-daily-util"
+                        onclick="toggleDailyUtilization()">
+                    <i class="fa-solid fa-chevron-down me-1" id="icon-toggle-daily"></i>
+                    <span id="text-toggle-daily">Lihat Detail Per Hari</span>
+                </button>
+            </div>
+
+            <!-- Daily detail section — filter tanggal ada di sini -->
+            <div id="utilizationDailySection" class="d-none">
+                <hr class="my-3" style="border-color: rgba(0,0,0,.08);">
+                <div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-3">
+                    <p class="text-muted small mb-0">
+                        <i class="fa-regular fa-calendar me-1"></i>Detail penggunaan kapasitas harian
+                    </p>
+                    <div class="d-flex align-items-end gap-2 flex-wrap">
+                        <div>
+                            <label for="hist-start-date" class="form-label form-label-sm mb-1">Dari</label>
+                            <input type="date" id="hist-start-date" class="form-control form-control-sm">
+                        </div>
+                        <div>
+                            <label for="hist-end-date" class="form-label form-label-sm mb-1">Sampai</label>
+                            <input type="date" id="hist-end-date" class="form-control form-control-sm">
+                        </div>
+                        <div class="d-flex gap-1 pb-1">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="applyUtilizationFilter()">Terapkan</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetUtilizationFilter()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="utilizationDailyChart" style="width:100%; height:260px;"></div>
             </div>
         {% else %}
             <div class="text-center text-muted py-4 small">
@@ -101,25 +121,8 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
-    <div class="d-flex align-items-end gap-2 flex-wrap">
-        <div>
-            <label for="line-start-date" class="form-label form-label-sm mb-1">Tanggal mulai</label>
-            <input type="date" id="line-start-date" class="form-control form-control-sm">
-        </div>
-        <div>
-            <label for="line-end-date" class="form-label form-label-sm mb-1">Tanggal akhir</label>
-            <input type="date" id="line-end-date" class="form-control form-control-sm">
-        </div>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-primary" onclick="applyLineFilter()">
-                Terapkan
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetLineFilter()">
-                Reset
-            </button>
-        </div>
-    </div>
+<!-- Forecast Subscribe & Terminate -->
+<div class="d-flex justify-content-end align-items-center mb-3">
     {% set hidden_package_ids = [81, 82, 83] %}
     {% set visible_package_ids = package_ids | reject('in', hidden_package_ids) | list %}
     {% if visible_package_ids %}
@@ -136,7 +139,8 @@
     </div>
     {% endif %}
 </div>
-<div class="row g-4">
+
+<div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
@@ -161,6 +165,7 @@
     </div>
 </div>
 
+<!-- Error metrics -->
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
@@ -186,14 +191,17 @@
 
 <script>
 (function () {
-    var estimationData = {{ estimation_data | tojson }};
-    var forecastData   = {{ forecast_data   | tojson }};
-    var historyData    = {{ history_data     | tojson }};
+    var estimationData  = {{ estimation_data  | tojson }};
+    var forecastData    = {{ forecast_data    | tojson }};
+    var historyData     = {{ history_data     | tojson }};
     var forecastMetrics = {{ forecast_metrics | tojson }};
     var hiddenPackageIds = [80, 82, 83];
-    var packageIds     = {{ package_ids      | tojson }}
-        .filter(function(pid){ return hiddenPackageIds.indexOf(Number(pid)) === -1; });
+    var packageIds = {{ package_ids | tojson }}
+        .filter(function(pid) { return hiddenPackageIds.indexOf(Number(pid)) === -1; });
     var currentPackageId = packageIds.length ? Number(packageIds[0]) : null;
+    var dailyUtilVisible = false;
+
+    /* ─── helpers ─── */
 
     function roundToNearestInteger(value) {
         var num = Number(value);
@@ -203,17 +211,16 @@
     function fmtOriginalValue(value) {
         var num = Number(value);
         if (!Number.isFinite(num)) return value;
-        return num.toLocaleString('id-ID', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 4,
-        });
+        return num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+    }
+
+    function sortByDateAscending(rows) {
+        return rows.slice().sort(function(a, b) { return a.date.localeCompare(b.date); });
     }
 
     function getLineYAxisMax(values) {
-        var numericValues = values
-            .map(function(value){ return Number(value); })
-            .filter(function(value){ return Number.isFinite(value); });
-        var rawMax = numericValues.length ? Math.max.apply(null, numericValues) : 0;
+        var nums = values.map(Number).filter(Number.isFinite);
+        var rawMax = nums.length ? Math.max.apply(null, nums) : 0;
         return Math.max(Math.ceil(rawMax / 10) * 10, 10);
     }
 
@@ -221,30 +228,9 @@
         return yMax + Math.max(yMax * 0.02, 1);
     }
 
-    function getLineFilterValues() {
-        var startInput = document.getElementById('line-start-date');
-        var endInput = document.getElementById('line-end-date');
-        return {
-            start: startInput ? startInput.value : '',
-            end: endInput ? endInput.value : '',
-        };
-    }
-
-    function filterRowsByDate(rows, startDate, endDate) {
-        return rows.filter(function(row) {
-            var afterStart = !startDate || row.date >= startDate;
-            var beforeEnd = !endDate || row.date <= endDate;
-            return afterStart && beforeEnd;
-        });
-    }
-
-
-
     function getMetricValue(value, isPercent) {
         var num = Number(value);
-        if (!Number.isFinite(num)) {
-            return '-';
-        }
+        if (!Number.isFinite(num)) return '-';
         return num.toLocaleString('id-ID', {
             minimumFractionDigits: 0,
             maximumFractionDigits: isPercent ? 2 : 4,
@@ -252,221 +238,255 @@
     }
 
     function getPackageMetrics(pkgId) {
-        if (pkgId === null || pkgId === undefined) {
-            return { subscribe: {}, terminate: {} };
-        }
-
+        if (pkgId === null || pkgId === undefined) return { subscribe: {}, terminate: {} };
         return forecastMetrics[String(Number(pkgId))] || forecastMetrics[Number(pkgId)] || { subscribe: {}, terminate: {} };
     }
 
-    function sortByDateAscending(rows) {
-        return rows.slice().sort(function(a, b) {
-            return a.date.localeCompare(b.date);
-        });
-    }
+    /* ─── utilisasi: monthly bar chart ─── */
 
-    function getUtilizationFilterValues() {
-        var startInput = document.getElementById('hist-start-date');
-        var endInput = document.getElementById('hist-end-date');
-        return {
-            start: startInput ? startInput.value : '',
-            end: endInput ? endInput.value : '',
-        };
-    }
-
-    function getFilteredEstimationData() {
-        var filters = getUtilizationFilterValues();
-        return sortByDateAscending(estimationData).filter(function(row) {
-            var afterStart = !filters.start || row.date >= filters.start;
-            var beforeEnd = !filters.end || row.date <= filters.end;
-            return afterStart && beforeEnd;
+    function aggregateMonthlyAvg(rows, valueKey) {
+        var monthly = {};
+        rows.forEach(function(row) {
+            var monthDate = row.date.substring(0, 7) + '-01';
+            if (!monthly[monthDate]) monthly[monthDate] = { date: monthDate, sum: 0, count: 0 };
+            monthly[monthDate].sum   += Number(row[valueKey]) || 0;
+            monthly[monthDate].count += 1;
         });
+        return Object.values(monthly)
+            .map(function(m) {
+                var r = { date: m.date };
+                r[valueKey] = m.count > 0 ? Math.round((m.sum / m.count) * 100) / 100 : 0;
+                return r;
+            })
+            .sort(function(a, b) { return a.date.localeCompare(b.date); });
     }
 
     function renderUtilizationChart(rows) {
-        var estDiv = document.getElementById('utilizationChart');
-        var emptyState = document.getElementById('utilizationEmptyState');
+        var div = document.getElementById('utilizationChart');
+        if (!div) return;
+        var monthly = aggregateMonthlyAvg(rows, 'utilization');
 
-        if (!estDiv) {
-            return;
+        /* buang bulan parsial: bulan yang sama dengan bulan terakhir data historis */
+        if (historyData.length) {
+            var allHistDates = historyData.map(function(r) { return r.date; }).sort();
+            var lastHistMonth = allHistDates[allHistDates.length - 1].substring(0, 7);
+            monthly = monthly.filter(function(m) {
+                return m.date.substring(0, 7) > lastHistMonth;
+            });
         }
-
-        if (!rows.length) {
-            estDiv.innerHTML = '';
-            if (emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-            return;
-        }
-
-        if (emptyState) {
-            emptyState.classList.add('d-none');
-        }
-
-        var estValues = rows.map(function(r){ return r.utilization; });
-        var rawMax = Math.max.apply(null, estValues);
-        var yMax = Math.max(rawMax * 1.2, 10);
-
-        var barTrace = {
-            x: rows.map(function(r){ return r.date; }),
-            y: estValues,
+        var values  = monthly.map(function(r) { return r.utilization; });
+        var rawMax  = values.length ? Math.max.apply(null, values) : 0;
+        var yMax    = Math.max(rawMax * 1.2, 95);
+        Plotly.react(div, [{
+            x: monthly.map(function(r) { return r.date; }),
+            y: values,
             type: 'bar',
             name: 'Utilisasi (%)',
             marker: { color: '#3b5bdb', opacity: 0.85 },
-            hovertemplate: '<b>%{x|%d %b %Y}</b><br>Utilisasi: <b>%{y:.1f}%</b><extra></extra>',
-        };
-
-        var barLayout = {
-            paper_bgcolor: 'white',
-            plot_bgcolor:  'white',
-            bargap: 0.25,
+            hovertemplate: '<b>%{x|%b %Y}</b><br>Rata-rata Utilisasi: <b>%{y:.1f}%</b><extra></extra>',
+        }], {
+            paper_bgcolor: 'white', plot_bgcolor: 'white', bargap: 0.25,
             margin: { t: 10, r: 20, b: 70, l: 70 },
+            xaxis: { type: 'date', tickformat: '%b %Y', showgrid: false,
+                     title: { text: 'Bulan', font: { size: 11, color: '#6b7280' } } },
+            yaxis: { ticksuffix: '%', range: [0, yMax], gridcolor: 'rgba(0,0,0,.07)' },
+            shapes: [{ type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: 80, y1: 80,
+                       line: { color: '#f0a828', dash: 'dash', width: 2 } }],
+            legend: { orientation: 'h', x: 0, y: -0.3 },
+            hovermode: 'closest',
+            hoverlabel: { bgcolor: '#111827', bordercolor: 'rgba(255,255,255,0.12)',
+                          font: { color: 'white', size: 12 }, align: 'left' },
+        }, { responsive: true, displayModeBar: false });
+    }
+
+    /* ─── utilisasi: daily line chart ─── */
+
+    function renderDailyUtilizationChart(rows) {
+        var div = document.getElementById('utilizationDailyChart');
+        if (!div || !rows.length) return;
+        var sorted = rows.slice().sort(function(a, b) { return a.date.localeCompare(b.date); });
+        var values = sorted.map(function(r) { return Math.round(Number(r.utilization) * 100) / 100; });
+        var rawMax = Math.max.apply(null, values);
+        var yMax   = Math.max(Math.ceil(rawMax / 10) * 10, 95);
+        var xDates = sorted.map(function(r) { return r.date; });
+        var totalDays = (new Date(xDates[xDates.length - 1]) - new Date(xDates[0])) / 86400000;
+        var dtick = totalDays <= 30  ? 7  * 86400000 :
+                    totalDays <= 120 ? 14 * 86400000 :
+                    'M1';
+        Plotly.react(div, [{
+            x: xDates,
+            y: values,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Utilisasi Harian',
+            line: { color: '#3b5bdb', width: 2.5 },
+            marker: { color: '#3b5bdb', size: 5 },
+            hovertemplate: '<b>%{x|%d %b %Y}</b><br>Utilisasi: <b>%{y:.1f}%</b><extra></extra>',
+        }], {
+            paper_bgcolor: 'white', plot_bgcolor: 'white',
+            margin: { t: 10, r: 20, b: 80, l: 65 },
             xaxis: {
                 type: 'date',
-                tickformat: '%d %b',
-                showgrid: false,
-                title: { text: 'Tanggal', font: { size: 11, color: '#6b7280' } },
+                range: [xDates[0], xDates[xDates.length - 1]],
+                tick0: xDates[0],
+                dtick: dtick,
+                title: { text: 'Tanggal', font: { size: 11 } },
+                tickangle: -30, tickformat: '%d %b %Y', showgrid: false,
             },
             yaxis: {
+                title: { text: 'Utilisasi (%)', font: { size: 11 } },
                 ticksuffix: '%',
-                range: [0, yMax],
+                range: [0, yMax + Math.max(yMax * 0.02, 1)],
                 gridcolor: 'rgba(0,0,0,.07)',
             },
-            shapes: [{
-                type: 'line',
-                xref: 'paper',
-                yref: 'y',
-                x0: 0, x1: 1,
-                y0: 80, y1: 80,
-                line: { color: '#f0a828', dash: 'dash', width: 2 },
-            }],
-            legend: {
-                orientation: 'h',
-                x: 0, y: -0.3,
-            },
+            shapes: [{ type: 'line', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: 80, y1: 80,
+                       line: { color: '#f0a828', dash: 'dash', width: 2 } }],
+            legend: { orientation: 'h', x: 0, y: -0.35 },
             hovermode: 'closest',
-            hoverlabel: {
-                bgcolor: '#111827',
-                bordercolor: 'rgba(255,255,255,0.12)',
-                font: { color: 'white', size: 12 },
-                align: 'left',
-            },
-        };
+            hoverlabel: { bgcolor: '#111827', bordercolor: 'rgba(255,255,255,0.12)',
+                          font: { color: 'white', size: 12 }, align: 'left' },
+        }, { responsive: true, displayModeBar: false });
+    }
 
-        Plotly.react(estDiv, [barTrace], barLayout, {
-            responsive: true,
-            displayModeBar: false,
+    function getUtilizationFilterValues() {
+        var s = document.getElementById('hist-start-date');
+        var e = document.getElementById('hist-end-date');
+        return { start: s ? s.value : '', end: e ? e.value : '' };
+    }
+
+    function getFilteredEstimationData() {
+        var f = getUtilizationFilterValues();
+        return sortByDateAscending(estimationData).filter(function(row) {
+            return (!f.start || row.date >= f.start) && (!f.end || row.date <= f.end);
         });
     }
 
     function syncUtilizationFilterBounds() {
-        var startInput = document.getElementById('hist-start-date');
-        var endInput = document.getElementById('hist-end-date');
+        var s = document.getElementById('hist-start-date');
+        var e = document.getElementById('hist-end-date');
+        if (!s || !e || !estimationData.length) return;
+        var sorted = sortByDateAscending(estimationData).map(function(r) { return r.date; });
 
-        if (!startInput || !endInput || !estimationData.length) {
-            return;
+        /* hitung tanggal 1 dari bulan pertama yang penuh (setelah bulan terakhir historis) */
+        var firstFullMonthDate = sorted[0];
+        if (historyData.length) {
+            var allHistDates = historyData.map(function(r) { return r.date; }).sort();
+            var lastHistMonth = allHistDates[allHistDates.length - 1].substring(0, 7); // "YYYY-MM"
+            var parts = lastHistMonth.split('-');
+            var y = parseInt(parts[0]), m = parseInt(parts[1]);
+            m += 1;
+            if (m > 12) { m = 1; y += 1; }
+            firstFullMonthDate = y + '-' + (m < 10 ? '0' + m : m) + '-01';
         }
 
-        var sortedDates = sortByDateAscending(estimationData).map(function(row) {
-            return row.date;
-        });
-
-        startInput.min = sortedDates[0];
-        startInput.max = sortedDates[sortedDates.length - 1];
-        endInput.min = sortedDates[0];
-        endInput.max = sortedDates[sortedDates.length - 1];
-
-        if (!startInput.value) {
-            startInput.value = sortedDates[0];
-        }
-
-        if (!endInput.value) {
-            endInput.value = sortedDates[sortedDates.length - 1];
-        }
+        s.min = firstFullMonthDate; s.max = sorted[sorted.length - 1];
+        e.min = firstFullMonthDate; e.max = sorted[sorted.length - 1];
+        if (!s.value || s.value < firstFullMonthDate) s.value = firstFullMonthDate;
+        if (!e.value) e.value = sorted[sorted.length - 1];
     }
 
+    function showFilterToast() {
+        var el = document.getElementById('filterAppliedToast');
+        if (!el) return;
+        bootstrap.Toast.getOrCreateInstance(el, { delay: 2500 }).show();
+    }
+
+    /* filter hanya mempengaruhi daily chart */
     window.applyUtilizationFilter = function() {
-        var filters = getUtilizationFilterValues();
-
-        if (filters.start && filters.end && filters.start > filters.end) {
-            var temp = filters.start;
-            filters.start = filters.end;
-            filters.end = temp;
-
-            var startInput = document.getElementById('hist-start-date');
-            var endInput = document.getElementById('hist-end-date');
-
-            if (startInput) {
-                startInput.value = filters.start;
-            }
-            if (endInput) {
-                endInput.value = filters.end;
-            }
+        var f = getUtilizationFilterValues();
+        if (f.start && f.end && f.start > f.end) {
+            var tmp = f.start; f.start = f.end; f.end = tmp;
+            document.getElementById('hist-start-date').value = f.start;
+            document.getElementById('hist-end-date').value   = f.end;
         }
-
-        renderUtilizationChart(getFilteredEstimationData());
+        renderDailyUtilizationChart(getFilteredEstimationData());
+        showFilterToast();
     };
 
     window.resetUtilizationFilter = function() {
-        var startInput = document.getElementById('hist-start-date');
-        var endInput = document.getElementById('hist-end-date');
-        var sortedDates = sortByDateAscending(estimationData).map(function(row) {
-            return row.date;
-        });
-
-        if (startInput && sortedDates.length) {
-            startInput.value = sortedDates[0];
-        }
-        if (endInput && sortedDates.length) {
-            endInput.value = sortedDates[sortedDates.length - 1];
-        }
-
-        renderUtilizationChart(sortByDateAscending(estimationData));
+        var s = document.getElementById('hist-start-date');
+        var e = document.getElementById('hist-end-date');
+        var sorted = sortByDateAscending(estimationData).map(function(r) { return r.date; });
+        if (s && sorted.length) s.value = sorted[0];
+        if (e && sorted.length) e.value = sorted[sorted.length - 1];
+        renderDailyUtilizationChart(sortByDateAscending(estimationData));
     };
 
-    syncUtilizationFilterBounds();
-    if (estimationData.length) {
-        renderUtilizationChart(getFilteredEstimationData());
+    window.toggleDailyUtilization = function() {
+        dailyUtilVisible = !dailyUtilVisible;
+        var section = document.getElementById('utilizationDailySection');
+        var icon    = document.getElementById('icon-toggle-daily');
+        var text    = document.getElementById('text-toggle-daily');
+        if (dailyUtilVisible) {
+            section.classList.remove('d-none');
+            icon.className   = 'fa-solid fa-chevron-up me-1';
+            text.textContent = 'Sembunyikan Detail';
+            syncUtilizationFilterBounds();
+            renderDailyUtilizationChart(getFilteredEstimationData());
+        } else {
+            section.classList.add('d-none');
+            icon.className   = 'fa-solid fa-chevron-down me-1';
+            text.textContent = 'Lihat Detail Per Hari';
+        }
+    };
+
+    /* ─── forecast line charts — data bulanan ─── */
+
+    function aggregateMonthlySum(rows, valueKeys) {
+        var monthly = {};
+        rows.forEach(function(row) {
+            var monthDate = row.date.substring(0, 7) + '-01';
+            if (!monthly[monthDate]) {
+                monthly[monthDate] = { date: monthDate };
+                valueKeys.forEach(function(k) { monthly[monthDate][k] = 0; });
+            }
+            valueKeys.forEach(function(k) { monthly[monthDate][k] += Number(row[k]) || 0; });
+        });
+        return Object.values(monthly).sort(function(a, b) { return a.date.localeCompare(b.date); });
     }
 
-    function getPackageData(pkgId, startDate, endDate) {
+    function getPackageData(pkgId) {
         var pid  = parseInt(pkgId);
-        var hist = historyData.filter(function(r){ return r.package_id === pid; });
-        var fcst = forecastData.filter(function(r){ return r.package_id === pid; });
+        var hist = historyData.filter(function(r) { return r.package_id === pid; });
+        var fcst = forecastData.filter(function(r) { return r.package_id === pid; });
 
-        hist.sort(function(a, b){ return a.date.localeCompare(b.date); });
+        hist.sort(function(a, b) { return a.date.localeCompare(b.date); });
+        fcst.sort(function(a, b) { return a.date.localeCompare(b.date); });
 
-        var minHistDate = hist.length ? hist[0].date : null;
+        var maxHistDate = hist.length ? hist[hist.length - 1].date : null;
 
-        if (minHistDate) {
-            fcst = fcst.filter(function(r){ return r.date >= minHistDate; });
+        if (maxHistDate) {
+            var d = new Date(maxHistDate);
+            d.setFullYear(d.getFullYear() - 1);
+            var oneYearBack = d.toISOString().substring(0, 10);
+            /* historis: 1 tahun ke belakang */
+            hist = hist.filter(function(r) { return r.date >= oneYearBack; });
+            /* forecast: mulai dari titik yang sama (historis + future) */
+            fcst = fcst.filter(function(r) { return r.date >= oneYearBack; });
         }
-        fcst.sort(function(a, b){ return a.date.localeCompare(b.date); });
 
-        hist = filterRowsByDate(hist, startDate, endDate);
-        fcst = filterRowsByDate(fcst, startDate, endDate);
+        /* agregasi ke bulanan */
+        var histM = aggregateMonthlySum(hist, ['total_subscribe', 'total_terminate']);
+        var fcstM = aggregateMonthlySum(fcst, ['forecast_subscribe', 'forecast_terminate']);
 
         return {
-            histDates: hist.map(function(r){ return r.date; }),
-            histSub:   hist.map(function(r){ return r.total_subscribe; }),
-            histTrm:   hist.map(function(r){ return r.total_terminate; }),
-            fcstDates: fcst.map(function(r){ return r.date; }),
-            fcstSub:   fcst.map(function(r){ return r.forecast_subscribe; }),
-            fcstTrm:   fcst.map(function(r){ return r.forecast_terminate; }),
+            histDates: histM.map(function(r) { return r.date; }),
+            histSub:   histM.map(function(r) { return r.total_subscribe; }),
+            histTrm:   histM.map(function(r) { return r.total_terminate; }),
+            fcstDates: fcstM.map(function(r) { return r.date; }),
+            fcstSub:   fcstM.map(function(r) { return r.forecast_subscribe; }),
+            fcstTrm:   fcstM.map(function(r) { return r.forecast_terminate; }),
         };
     }
 
     function lineLayout(yTitle, yMax) {
         return {
-            paper_bgcolor: 'white',
-            plot_bgcolor:  'white',
+            paper_bgcolor: 'white', plot_bgcolor: 'white',
             margin: { t: 10, r: 20, b: 80, l: 65 },
             xaxis: {
                 type: 'date',
-                title: { text: 'Tanggal', font: { size: 11 } },
-                tickangle: -30,
-                tickformat: '%d %b',
-                showgrid: false,
+                title: { text: 'Periode Waktu (Bulan)', font: { size: 11 } },
+                tickangle: -30, tickformat: '%b %Y', showgrid: false,
             },
             yaxis: {
                 title: { text: yTitle, font: { size: 11 } },
@@ -474,17 +494,10 @@
                 dtick: yMax <= 10 ? 5 : 10,
                 gridcolor: 'rgba(0,0,0,.07)',
             },
-            legend: {
-                orientation: 'h',
-                x: 0, y: -0.35,
-            },
+            legend: { orientation: 'h', x: 0, y: -0.35 },
             hovermode: 'closest',
-            hoverlabel: {
-                bgcolor: '#111827',
-                bordercolor: 'rgba(255,255,255,0.12)',
-                font: { color: 'white', size: 12 },
-                align: 'left',
-            },
+            hoverlabel: { bgcolor: '#111827', bordercolor: 'rgba(255,255,255,0.12)',
+                          font: { color: 'white', size: 12 }, align: 'left' },
         };
     }
 
@@ -493,127 +506,72 @@
     function buildPlotlyLine(divId, histDates, histVals, fcstDates, fcstVals, yTitle, forecastColor) {
         var div = document.getElementById(divId);
         if (!div) return;
-
-        var roundedHistVals = histVals.map(roundToNearestInteger);
-        var roundedFcstVals = fcstVals.map(roundToNearestInteger);
+        var roundedHistVals    = histVals.map(roundToNearestInteger);
+        var roundedFcstVals    = fcstVals.map(roundToNearestInteger);
         var histOriginalValues = histVals.map(fmtOriginalValue);
         var fcstOriginalValues = fcstVals.map(fmtOriginalValue);
         var yMax = getLineYAxisMax(histVals.concat(fcstVals));
-
-        var histTrace = {
-            x: histDates,
-            y: roundedHistVals,
-            customdata: histOriginalValues,
-            type: 'scatter',
-            mode: 'lines+markers',
-            name: 'Historis',
-            line:   { color: HISTORIS_COLOR, width: 2.5 },
-            marker: { color: HISTORIS_COLOR, size: 6 },
-            hovertemplate: '<b>%{x|%d %b %Y}</b><br>Historis: <b>%{customdata}</b><extra></extra>',
-        };
-        var fcstTrace = {
-            x: fcstDates,
-            y: roundedFcstVals,
-            customdata: fcstOriginalValues,
-            type: 'scatter',
-            mode: 'lines+markers',
-            name: 'Forecast',
-            line:   { color: forecastColor, width: 2.5 },
-            marker: { color: forecastColor, size: 6 },
-            hovertemplate: '<b>%{x|%d %b %Y}</b><br>Forecast: <b>%{customdata}</b><extra></extra>',
-        };
-        Plotly.react(div, [histTrace, fcstTrace], lineLayout(yTitle, yMax), {
-            responsive: true,
-            displayModeBar: false,
-        });
+        Plotly.react(div, [
+            {
+                x: histDates, y: roundedHistVals, customdata: histOriginalValues,
+                type: 'scatter', mode: 'lines+markers', name: 'Historis',
+                line: { color: HISTORIS_COLOR, width: 2.5 }, marker: { color: HISTORIS_COLOR, size: 6 },
+                hovertemplate: '<b>%{x|%b %Y}</b><br>Historis: <b>%{customdata}</b><extra></extra>',
+            },
+            {
+                x: fcstDates, y: roundedFcstVals, customdata: fcstOriginalValues,
+                type: 'scatter', mode: 'lines+markers', name: 'Forecast',
+                line: { color: forecastColor, width: 2.5 }, marker: { color: forecastColor, size: 6 },
+                hovertemplate: '<b>%{x|%b %Y}</b><br>Forecast: <b>%{customdata}</b><extra></extra>',
+            },
+        ], lineLayout(yTitle, yMax), { responsive: true, displayModeBar: false });
     }
+
+    /* ─── error metrics ─── */
 
     function renderMetricSummary(pkgId) {
         var container = document.getElementById('forecastMetricsSummary');
-        if (!container) {
-            return;
-        }
-
+        if (!container) return;
         var metrics = getPackageMetrics(pkgId);
         var sections = [
             { label: 'Subscribe', metrics: metrics.subscribe || {}, color: '#3b5bdb' },
             { label: 'Terminate', metrics: metrics.terminate || {}, color: '#ef4444' },
         ];
-
-        container.innerHTML = sections.map(function(section) {
-            return '' +
-                '<div class="col-lg-6">' +
-                    '<div class="border rounded-4 p-3 h-100" style="background:#f8fafc; border-color: rgba(148,163,184,.35) !important;">' +
-                        '<div class="d-flex align-items-center justify-content-between mb-3">' +
-                            '<div>' +
-                                '<div class="text-muted small">Ringkasan ' + section.label + '</div>' +
-                                '<div class="fw-bold">Error ' + section.label + '</div>' +
-                            '</div>' +
-                            '<span class="badge rounded-pill" style="background:' + section.color + '1a; color:' + section.color + '; border:1px solid ' + section.color + '33;">' + section.label + '</span>' +
+        container.innerHTML = sections.map(function(s) {
+            return '<div class="col-lg-6">' +
+                '<div class="border rounded-4 p-3 h-100" style="background:#f8fafc; border-color:rgba(148,163,184,.35) !important;">' +
+                    '<div class="d-flex align-items-center justify-content-between mb-3">' +
+                        '<div>' +
+                            '<div class="text-muted small">Ringkasan ' + s.label + '</div>' +
+                            '<div class="fw-bold">Error ' + s.label + '</div>' +
                         '</div>' +
-                        '<div class="row g-2">' +
-                            metricCard('MAE', section.metrics.mae, false) +
-                            metricCard('RMSE', section.metrics.rmse, false) +
-                            metricCard('SMAPE', section.metrics.smape, true) +
-                        '</div>' +
+                        '<span class="badge rounded-pill" style="background:' + s.color + '1a;color:' + s.color + ';border:1px solid ' + s.color + '33;">' + s.label + '</span>' +
                     '</div>' +
-                '</div>';
+                    '<div class="row g-2">' +
+                        metricCard('MAE',   s.metrics.mae,   false) +
+                        metricCard('RMSE',  s.metrics.rmse,  false) +
+                        metricCard('SMAPE', s.metrics.smape, true)  +
+                    '</div>' +
+                '</div>' +
+            '</div>';
         }).join('');
     }
 
     function metricCard(label, value, isPercent) {
-        return '' +
-            '<div class="col-4">' +
-                '<div class="border rounded-3 p-2 h-100" style="background:#fff; border-color: rgba(148,163,184,.28) !important;">' +
-                    '<div class="text-muted" style="font-size:.72rem;">' + label + '</div>' +
-                    '<div class="fw-semibold">' + getMetricValue(value, isPercent) + '</div>' +
-                '</div>' +
-            '</div>';
+        return '<div class="col-4">' +
+            '<div class="border rounded-3 p-2 h-100" style="background:#fff; border-color:rgba(148,163,184,.28) !important;">' +
+                '<div class="text-muted" style="font-size:.72rem;">' + label + '</div>' +
+                '<div class="fw-semibold">' + getMetricValue(value, isPercent) + '</div>' +
+            '</div>' +
+        '</div>';
     }
 
-    function syncLineFilterBounds(pkgId) {
-        var startInput = document.getElementById('line-start-date');
-        var endInput = document.getElementById('line-end-date');
-        if (!startInput || !endInput) {
-            return;
-        }
-
-        var data = getPackageData(pkgId, '', '');
-        var allDates = data.histDates.concat(data.fcstDates).sort();
-
-        if (!allDates.length) {
-            return;
-        }
-
-        var minDate = allDates[0];
-        var maxDate = allDates[allDates.length - 1];
-
-        startInput.min = minDate;
-        startInput.max = maxDate;
-        endInput.min = minDate;
-        endInput.max = maxDate;
-
-        if (!startInput.value || startInput.value < minDate || startInput.value > maxDate) {
-            startInput.value = minDate;
-        }
-
-        if (!endInput.value || endInput.value < minDate || endInput.value > maxDate) {
-            endInput.value = maxDate;
-        }
-    }
+    /* ─── render & init ─── */
 
     function renderCurrentPackageCharts() {
-        if (!currentPackageId) {
-            return;
-        }
-
-        var filters = getLineFilterValues();
-        var startDate = filters.start;
-        var endDate = filters.end;
-        var data = getPackageData(currentPackageId, startDate, endDate);
-
+        if (!currentPackageId) return;
+        var data = getPackageData(currentPackageId);
         renderMetricSummary(currentPackageId);
-
         buildPlotlyLine('subscribeChart',
             data.histDates, data.histSub, data.fcstDates, data.fcstSub,
             'Jumlah Subscription VM', '#3b5bdb');
@@ -623,34 +581,29 @@
     }
 
     window.updateLineCharts = function(pkgId) {
-        if (!pkgId && packageIds.length) {
-            pkgId = packageIds[0];
-        }
-        if (!pkgId) {
-            return;
-        }
-
+        if (!pkgId && packageIds.length) pkgId = packageIds[0];
+        if (!pkgId) return;
         currentPackageId = Number(pkgId);
-        syncLineFilterBounds(currentPackageId);
         renderCurrentPackageCharts();
     };
 
-    window.applyLineFilter = function() {
-        renderCurrentPackageCharts();
-    };
-
-    window.resetLineFilter = function() {
-        if (!currentPackageId) {
-            return;
-        }
-
-        syncLineFilterBounds(currentPackageId);
-        renderCurrentPackageCharts();
-    };
-
+    if (estimationData.length) {
+        renderUtilizationChart(sortByDateAscending(estimationData));
+    }
     if (packageIds.length) {
-        updateLineCharts(packageIds[0]);
+        renderCurrentPackageCharts();
     }
 }());
 </script>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="filterAppliedToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fa-solid fa-check-circle me-2"></i>Filter berhasil diterapkan.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
 {% endblock %}
