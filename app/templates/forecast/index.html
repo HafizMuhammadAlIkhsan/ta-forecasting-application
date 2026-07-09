@@ -19,7 +19,7 @@
                     <p class="text-muted small mb-4">Unggah file CSV data historis penggunaan VM</p>
 
                     <form method="POST"
-                        action="{{ url_for('main.upload') }}"
+                        action="{{ url_for('forecast.upload') }}"
                         enctype="multipart/form-data"
                         id="upload-form">
 
@@ -94,7 +94,7 @@
                     <p class="text-muted small mb-4">Konfigurasi parameter analisis kapasitas server</p>
 
                     <form method="POST"
-                        action="{{ url_for('main.run_forecast') }}"
+                        action="{{ url_for('forecast.run_forecast') }}"
                         id="forecast-form">
 
                         <div class="mb-3">

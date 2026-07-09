@@ -64,7 +64,7 @@ def index():
 
             history_data = []
             for pid in package_ids:
-                daily_df = ForecastService._aggregate_daily(pid)
+                daily_df = ForecastService._prepare_daily_data(pid)
                 if daily_df is None:
                     continue
 

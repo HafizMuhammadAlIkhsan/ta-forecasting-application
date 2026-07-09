@@ -22,14 +22,14 @@ def create_app():
     login_manager.login_message_category = "warning"
 
     from app.controllers.auth_controller import auth_bp
-    from app.controllers.main_controller import main_bp
+    from app.controllers.forecast_controller import forecast_bp
     from app.controllers.dashboard_controller import dashboard_bp
     from itsdangerous import URLSafeTimedSerializer
 
     app.serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(main_bp)
+    app.register_blueprint(forecast_bp)
     app.register_blueprint(dashboard_bp)
     
     app.cli.add_command(init_db)

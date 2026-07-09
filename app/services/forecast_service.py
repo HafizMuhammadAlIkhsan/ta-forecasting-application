@@ -21,7 +21,7 @@ class ForecastService:
         all_metric_records = []
 
         for package_id in package_ids:
-            daily_df = ForecastService._aggregate_daily(package_id)
+            daily_df = ForecastService._prepare_daily_data(package_id)
             if daily_df is None or len(daily_df) < 2:
                 continue
 
@@ -88,7 +88,7 @@ class ForecastService:
         ForecastMetricRepository.bulk_insert(all_metric_records)
 
     @staticmethod
-    def _aggregate_daily(package_id: int) -> pd.DataFrame | None:
+    def _prepare_daily_data(package_id: int) -> pd.DataFrame | None:
         rows = (
             db.session.query(Dataset)
             .filter_by(package_id=package_id)
@@ -116,36 +116,6 @@ class ForecastService:
         daily = daily.reset_index()
 
         return daily
-
-    @staticmethod
-    def _aggregate_monthly(package_id: int) -> pd.DataFrame | None:
-        rows = (
-            db.session.query(Dataset)
-            .filter_by(package_id=package_id)
-            .order_by(Dataset.date)
-            .all()
-        )
-
-        if not rows:
-            return None
-
-        df = pd.DataFrame(
-            [
-                {
-                    "ds": pd.Timestamp(r.date),
-                    "total_subscribe": float(r.total_subscribe),
-                    "total_terminate": float(r.total_terminate),
-                }
-                for r in rows
-            ]
-        )
-
-        df = df.set_index("ds")
-        monthly = df.resample("MS").sum()
-        monthly = monthly.asfreq("MS", fill_value=0.0)
-        monthly = monthly.reset_index()
-
-        return monthly
 
     @staticmethod
     def _run_prophet(df: pd.DataFrame, horizon_months: int) -> pd.DataFrame:

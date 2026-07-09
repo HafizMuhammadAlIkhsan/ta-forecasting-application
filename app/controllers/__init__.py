@@ -1,2 +1,2 @@
 # from .auth_controller import auth_bp
-from .main_controller import main_bp
+from .forecast_controller import forecast_bp

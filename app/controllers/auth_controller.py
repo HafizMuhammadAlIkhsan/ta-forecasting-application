@@ -21,7 +21,7 @@ def load_user(user_id: str) -> User | None:
 def root():
     if current_user.is_authenticated:
         if not DatasetRepository.has_data():
-            return redirect(url_for("main.index"))
+            return redirect(url_for("forecast.index"))
         return redirect(url_for("dashboard.index"))
     return redirect(url_for("auth.login"))   
 
@@ -29,7 +29,7 @@ def root():
 def login():
     if current_user.is_authenticated:
         if not DatasetRepository.has_data():
-            return redirect(url_for("main.index"))
+            return redirect(url_for("forecast.index"))
         return redirect(url_for("dashboard.index"))
 
     if request.method == "POST":
@@ -40,7 +40,7 @@ def login():
         if user:
             login_user(user)
             if not DatasetRepository.has_data():
-                return redirect(url_for("main.index"))
+                return redirect(url_for("forecast.index"))
             return redirect(url_for("dashboard.index"))
 
         flash("Login Error, Email atau password salah.", "error")
