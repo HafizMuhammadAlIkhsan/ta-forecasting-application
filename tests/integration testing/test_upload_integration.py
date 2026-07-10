@@ -16,13 +16,13 @@ def test_upload_valid_csv_saves_dataset(client, seed_user):
         b"48,2024-02-01,12,3\n"
     )
     response = client.post(
-        "/main/upload",
+        "/forecast/upload",
         data={"file": (BytesIO(csv_content), "data.csv")},
         content_type="multipart/form-data",
     )
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/main/"
+    assert response.headers["Location"] == "/forecast/"
     assert Dataset.query.count() == 2
 
 # IT-07
@@ -31,13 +31,13 @@ def test_upload_invalid_file_does_not_save(client, seed_user):
     client.post("/login", data={"email": user.email, "password": "Password123"})
 
     response = client.post(
-        "/main/upload",
+        "/forecast/upload",
         data={"file": (BytesIO(b"not a csv"), "data.xlsx")},
         content_type="multipart/form-data",
     )
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/main/"
+    assert response.headers["Location"] == "/forecast/"
     assert Dataset.query.count() == 0
 
 # IT-14

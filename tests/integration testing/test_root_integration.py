@@ -17,7 +17,7 @@ def test_root_redirects_based_on_session_and_data(client, seed_user):
 
     response = client.get("/")
     assert response.status_code == 302
-    assert response.headers["Location"] == "/main/"
+    assert response.headers["Location"] == "/forecast/"
 
     # 3. Logged in, dataset available
     db.session.add(Dataset(package_id=48, date=date(2024, 1, 1), total_subscribe=1, total_terminate=0))

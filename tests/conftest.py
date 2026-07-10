@@ -1,7 +1,7 @@
 import pytest
 from werkzeug.security import generate_password_hash
 
-from app import create_app, db as _db
+from app import create_app, db as _db, mail
 from app.models import User
 
 
@@ -10,11 +10,12 @@ def app():
     app = create_app()
     app.config.update(
         TESTING=True,
-        SQLALCHEMY_DATABASE_URI="sqlite://",
+        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
         SECRET_KEY="test-secret-key",
         MAIL_SUPPRESS_SEND=True,
         WTF_CSRF_ENABLED=False,
     )
+    mail.init_app(app)
 
     with app.app_context():
         _db.create_all()

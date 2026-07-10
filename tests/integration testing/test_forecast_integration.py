@@ -22,7 +22,7 @@ def test_run_forecast_invalid_horizon_does_not_create_simulation(client, seed_us
     db.session.add(Dataset(package_id=48, date=date(2024, 1, 1), total_subscribe=10, total_terminate=2))
     db.session.commit()
 
-    response = client.post("/main/run-forecast", data={
+    response = client.post("/forecast/run-forecast", data={
         "server_utilization_percent": "50",
         "horizon_months": "13",
         "capacity_cpu": "100",
@@ -31,7 +31,7 @@ def test_run_forecast_invalid_horizon_does_not_create_simulation(client, seed_us
     })
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/main/"
+    assert response.headers["Location"] == "/forecast/"
     assert ServerForecastSimulation.query.count() == 0
 
 # IT-09
@@ -46,7 +46,7 @@ def test_run_forecast_valid_runs_full_pipeline(client, seed_user):
     db.session.add(SpecificationVM(package_id=48, cpu=1, ram=1, storage=20))
     db.session.commit()
 
-    response = client.post("/main/run-forecast", data={
+    response = client.post("/forecast/run-forecast", data={
         "server_utilization_percent": "50",
         "horizon_months": "4",
         "capacity_cpu": "100",

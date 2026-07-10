@@ -16,7 +16,7 @@ def test_login_success_creates_session(client, seed_user):
     })
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/main/"
+    assert response.headers["Location"] == "/forecast/"
 
     with client.session_transaction() as sess:
         assert "_user_id" in sess
@@ -59,7 +59,7 @@ def test_update_password_persists_across_sessions(client, seed_user):
 
     assert old_password_login.status_code == 200
     assert new_password_login.status_code == 302
-    assert new_password_login.headers["Location"] == "/main/"
+    assert new_password_login.headers["Location"] == "/forecast/"
 
 
 # IT-04
