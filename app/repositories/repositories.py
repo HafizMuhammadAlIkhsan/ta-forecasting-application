@@ -48,6 +48,10 @@ class DatasetRepository:
     def get_all_package_ids() -> list[int]:
         rows = db.session.query(Dataset.package_id).distinct().all()
         return sorted([r[0] for r in rows])
+    
+    @staticmethod
+    def get_last_date():
+        return db.session.query(db.func.max(Dataset.date)).scalar()
 
 
 class SpecificationVMRepository:

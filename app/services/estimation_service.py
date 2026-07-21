@@ -1,10 +1,11 @@
 import logging
+from app.models import ServerForecastSimulation
 from app.repositories import (
     ForecastResultRepository,
     SpecificationVMRepository,
     ServerEstimationResultRepository,
+    DatasetRepository,
 )
-from app.models import ServerForecastSimulation
 
 logger = logging.getLogger(__name__)
 
@@ -29,73 +30,72 @@ class EstimationService:
                 "Jalankan seeder untuk mengisi spesifikasi VM sebelum menjalankan forecast."
             )
 
-        records_by_date: dict = {}
-        skipped_packages: set = set()
+        last_actual_date = DatasetRepository.get_last_date()
 
+        rows_by_date = {}
         for row in forecast_rows:
-            spec = all_specs.get(row.package_id)
-
-            if spec is None:
-                skipped_packages.add(row.package_id)
+            if last_actual_date and row.date <= last_actual_date:
                 continue
 
-            net_demand = row.forecast_subscribe - row.forecast_terminate
+            if row.date not in rows_by_date:
+                rows_by_date[row.date] = []
+            rows_by_date[row.date].append(row)
 
-            est_cpu     = net_demand * spec.cpu
-            est_ram     = net_demand * spec.ram
-            est_storage = net_demand * spec.storage
+        skipped_packages = set()
+        estimation_records = []
+        cumulative_net_demand = {}
 
-            pct_cpu = (
-                (est_cpu / simulation.capacity_cpu * 100)
-                if simulation.capacity_cpu > 0
-                else 0.0
-            )
-            pct_ram = (
-                (est_ram / simulation.capacity_ram * 100)
-                if simulation.capacity_ram > 0
-                else 0.0
-            )
-            pct_storage = (
-                (est_storage / simulation.capacity_storage * 100)
-                if simulation.capacity_storage > 0
-                else 0.0
-            )
+        for date_obj, daily_rows in sorted(rows_by_date.items()):
+            for row in daily_rows:
+                spec = all_specs.get(row.package_id)
+                if spec is None:
+                    skipped_packages.add(row.package_id)
+                    continue
 
-            avg_resource_pct  = (pct_cpu + pct_ram + pct_storage) / 3
+                daily_delta = row.forecast_subscribe - row.forecast_terminate
+                cumulative_net_demand[row.package_id] = (
+                    cumulative_net_demand.get(row.package_id, 0.0) + daily_delta
+                )
+
+            total_cpu = 0.0
+            total_ram = 0.0
+            total_storage = 0.0
+
+            for package_id, net_demand in cumulative_net_demand.items():
+                spec = all_specs[package_id]
+                total_cpu += net_demand * spec.cpu
+                total_ram += net_demand * spec.ram
+                total_storage += net_demand * spec.storage
+
+            pct_cpu = (total_cpu / simulation.capacity_cpu * 100) if simulation.capacity_cpu > 0 else 0.0
+            pct_ram = (total_ram / simulation.capacity_ram * 100) if simulation.capacity_ram > 0 else 0.0
+            pct_storage = (total_storage / simulation.capacity_storage * 100) if simulation.capacity_storage > 0 else 0.0
+
+            avg_resource_pct = (pct_cpu + pct_ram + pct_storage) / 3
             final_utilization = simulation.server_utilization_percent + avg_resource_pct
 
-            if row.date not in records_by_date:
-                records_by_date[row.date] = []
-            records_by_date[row.date].append(final_utilization)
+            estimation_records.append({
+                "date": date_obj,
+                "final_utilization_percentage": final_utilization,
+                "simulation_id": simulation.simulation_id,
+            })
 
         if skipped_packages:
             logger.warning(
-                "[EstimationService] %d package tidak memiliki spesifikasi VM "
-                "dan dilewati: %s",
+                "[EstimationService] %d package dilewati: %s",
                 len(skipped_packages),
                 sorted(skipped_packages),
             )
 
-        if not records_by_date:
+        if not cumulative_net_demand or not estimation_records:
             raise RuntimeError(
-                "Estimasi tidak menghasilkan data apapun. "
-                "Pastikan package_id di tabel specification_vm sesuai dengan dataset. "
-                f"Package di forecast: {sorted({r.package_id for r in forecast_rows})}. "
-                f"Package di spec: {sorted(all_specs.keys())}."
+                "Estimasi tidak menghasilkan data apapun untuk periode masa depan. "
+                "Pastikan package_id di tabel specification_vm sesuai dengan dataset."
             )
-
-        estimation_records = [
-            {
-                "date": date_obj,
-                "final_utilization_percentage": sum(values) / len(values),
-                "simulation_id": simulation.simulation_id,
-            }
-            for date_obj, values in sorted(records_by_date.items())
-        ]
 
         ServerEstimationResultRepository.bulk_insert(estimation_records)
         logger.info(
-            "[EstimationService] Berhasil menyimpan %d baris estimasi untuk simulation_id=%s",
+            "[EstimationService] Berhasil menyimpan %d baris estimasi",
             len(estimation_records),
             simulation.simulation_id,
         )
