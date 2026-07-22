@@ -228,9 +228,9 @@ class ForecastService:
             {'name': 'harbolnas', 'start': '2024-12-12', 'end': '2024-12-12'},
             {'name': 'harbolnas', 'start': '2025-12-12', 'end': '2025-12-24'},
 
-            {'name': 'natal_tahun_baru', 'start': '2022-12-23', 'end': '2023-01-06'},
-            {'name': 'natal_tahun_baru', 'start': '2024-12-23', 'end': '2025-01-10'},
-            {'name': 'natal_tahun_baru', 'start': '2025-12-25', 'end': '2026-01-10'},
+            {'name': 'natal', 'start': '2022-12-23', 'end': '2023-01-06'},
+            {'name': 'natal', 'start': '2024-12-23', 'end': '2025-01-10'},
+            {'name': 'natal', 'start': '2025-12-25', 'end': '2026-01-10'},
 
             {'name': 'promo_juni', 'start': '2023-06-23', 'end': '2023-06-30'},
             {'name': 'promo_juni', 'start': '2025-06-06', 'end': '2025-06-08'},
