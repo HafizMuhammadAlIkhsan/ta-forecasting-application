@@ -245,7 +245,8 @@ class ForecastService:
 
             {'name': 'promo_juli', 'start': '2022-07-18', 'end': '2022-07-29'},
             {'name': 'promo_oktober', 'start': '2022-10-14', 'end': '2022-10-24'},
-
+            {'name': 'kerja_sama_sekolah', 'start': '2025-08-06', 'end': '2025-08-06'},
+            
             {'name': 'tahun_baru', 'start': '2026-01-01', 'end': '2026-01-10'},
             {'name': 'imlek', 'start': '2026-01-29', 'end': '2026-02-08'},
             {'name': 'promo_q1_2020', 'start': '2026-02-10', 'end': '2026-02-20'},
