@@ -6,8 +6,6 @@ from app.models import User
 def seed_users() -> None:
     default_users = [
         {"email": "admin@forecasting.com", "password": "admin123"},
-        {"email": "kensio683@gmail.com", "password": "admin123"},
-        {"email": "khairiansyahfachry1@gmail.com", "password": "admin123"},
     ]
 
     for data in default_users:
